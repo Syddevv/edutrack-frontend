@@ -8,6 +8,7 @@ import { StudentsPage } from "./pages/StudentsPage";
 import { TeachersPage } from "./pages/TeachersPage";
 import { TeacherDashboardPage } from "./pages/TeacherDashboardPage";
 import { TeacherAttendancePage } from "./pages/TeacherAttendancePage";
+import { TeacherReportsPage } from "./pages/TeacherReportsPage";
 
 export type RouteKey =
   | "login"
@@ -96,7 +97,7 @@ function App() {
       case "teacher-reports":
         return (
           <AppShell activeRoute={route} onNavigate={navigate} variant="teacher">
-            <ReportsPage />
+            <TeacherReportsPage />
           </AppShell>
         );
       case "dashboard":

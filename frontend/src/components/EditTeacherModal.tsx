@@ -1,14 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  TeacherAssignedClassesEditor,
+  type TeacherAssignedClass,
+} from "./TeacherAssignedClassesEditor";
 import {
   ActivityIcon,
   CheckCircleIcon,
   CloseIcon,
-  CourseIcon,
   MailIcon,
-  PlusIcon,
-  SectionIcon,
   UserAddIcon,
-  YearLevelIcon,
 } from "./Icons";
 
 export type EditTeacherData = {
@@ -25,35 +25,71 @@ type EditTeacherModalProps = {
   teacher: EditTeacherData | null;
 };
 
+const defaultDraft: TeacherAssignedClass = {
+  subject: "General",
+  course: "BSIS",
+  year: "1st Year",
+  section: "A",
+  startTime: "08:00 AM",
+  endTime: "09:30 AM",
+};
+
+function parseAssignedClass(assignedClass: string): TeacherAssignedClass {
+  const parts = assignedClass.split(" - ").map((item) => item.trim());
+  return {
+    subject: "General",
+    course: parts[0] ?? defaultDraft.course,
+    year: parts[1] ?? defaultDraft.year,
+    section: parts[2] ?? defaultDraft.section,
+    startTime: defaultDraft.startTime,
+    endTime: defaultDraft.endTime,
+  };
+}
+
 export function EditTeacherModal({
   isOpen,
   onClose,
   teacher,
 }: EditTeacherModalProps) {
-  const [assignedClasses, setAssignedClasses] = useState(["BSIS • 1st Year - A"]);
+  const [assignedClasses, setAssignedClasses] = useState<
+    TeacherAssignedClass[]
+  >([]);
+  const [draft, setDraft] = useState<TeacherAssignedClass>(defaultDraft);
 
-  const parsedAssignedClass = useMemo(() => {
-    if (!teacher) {
-      return {
-        course: "BSIS",
-        section: "A",
-        year: "1st Year",
-      };
+  useEffect(() => {
+    if (teacher && isOpen) {
+      const parsed = parseAssignedClass(teacher.assignedClass);
+      setDraft(parsed);
+      setAssignedClasses([parsed]);
     }
-
-    const [course = "BSIS", year = "1st Year", section = "A"] = teacher.assignedClass
-      .split(" - ")
-      .map((item) => item.trim());
-
-    return { course, section, year };
-  }, [teacher]);
+  }, [isOpen, teacher]);
 
   if (!isOpen || !teacher) {
     return null;
   }
 
+  function updateDraft(field: keyof TeacherAssignedClass, value: string) {
+    setDraft((current) => ({ ...current, [field]: value }));
+  }
+
+  function handleAddClass() {
+    if (!draft.subject.trim()) {
+      return;
+    }
+
+    setAssignedClasses((current) => [
+      ...current,
+      { ...draft, subject: draft.subject.trim() },
+    ]);
+    setDraft((current) => ({ ...current, subject: "" }));
+  }
+
   return (
-    <div className="student-modal-backdrop" role="presentation" onClick={onClose}>
+    <div
+      className="student-modal-backdrop"
+      role="presentation"
+      onClick={onClose}
+    >
       <div
         className="student-modal edit-teacher-modal"
         role="dialog"
@@ -116,75 +152,17 @@ export function EditTeacherModal({
             </span>
           </label>
 
-          <div className="student-modal__field student-modal__field--full">
-            <span className="student-modal__label">
-              Assigned Classes <span className="teacher-modal__required">*</span>{" "}
-              <span className="edit-teacher-modal__helper">Add one or more</span>
-            </span>
-
-            <div className="edit-teacher-modal__class-box">
-              <div className="edit-teacher-modal__class-grid">
-                <span className="teacher-modal__input-wrap teacher-modal__input-wrap--select">
-                  <CourseIcon className="teacher-modal__input-icon" />
-                  <select className="teacher-modal__select" defaultValue={parsedAssignedClass.course}>
-                    <option>BSIS</option>
-                    <option>BSOM</option>
-                    <option>BSAIS</option>
-                    <option>ACT</option>
-                  </select>
-                </span>
-
-                <span className="teacher-modal__input-wrap teacher-modal__input-wrap--select">
-                  <YearLevelIcon className="teacher-modal__input-icon" />
-                  <select className="teacher-modal__select" defaultValue={parsedAssignedClass.year}>
-                    <option>1st Year</option>
-                    <option>2nd Year</option>
-                    <option>3rd Year</option>
-                    <option>4th Year</option>
-                  </select>
-                </span>
-
-                <span className="teacher-modal__input-wrap teacher-modal__input-wrap--select">
-                  <SectionIcon className="teacher-modal__input-icon" />
-                  <select className="teacher-modal__select" defaultValue={parsedAssignedClass.section}>
-                    <option>A</option>
-                    <option>B</option>
-                    <option>C</option>
-                  </select>
-                </span>
-
-                <button
-                  className="button button--primary edit-teacher-modal__add-button"
-                  type="button"
-                  onClick={() => {
-                    const nextTag = `${parsedAssignedClass.course} • ${parsedAssignedClass.year} - ${parsedAssignedClass.section}`;
-                    setAssignedClasses((current) =>
-                      current.includes(nextTag) ? current : [...current, nextTag],
-                    );
-                  }}
-                >
-                  <PlusIcon className="button__icon" />
-                  Add
-                </button>
-              </div>
-
-              <div className="edit-teacher-modal__chips">
-                {assignedClasses.map((item) => (
-                  <button
-                    key={item}
-                    className="edit-teacher-modal__chip"
-                    type="button"
-                    onClick={() =>
-                      setAssignedClasses((current) => current.filter((entry) => entry !== item))
-                    }
-                  >
-                    <span>{item}</span>
-                    <CloseIcon className="edit-teacher-modal__chip-icon" />
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+          <TeacherAssignedClassesEditor
+            assignedClasses={assignedClasses}
+            draft={draft}
+            onAddClass={handleAddClass}
+            onDraftChange={updateDraft}
+            onRemoveClass={(index) =>
+              setAssignedClasses((current) =>
+                current.filter((_, itemIndex) => itemIndex !== index),
+              )
+            }
+          />
 
           <label className="student-modal__field student-modal__field--full">
             <span className="student-modal__label">Status</span>
