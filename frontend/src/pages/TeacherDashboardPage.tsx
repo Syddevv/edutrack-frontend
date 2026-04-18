@@ -69,7 +69,9 @@ function SparkIcon() {
 }
 
 export function TeacherDashboardPage() {
-  const [overview, setOverview] = useState<TeacherDashboardOverview | null>(null);
+  const [overview, setOverview] = useState<TeacherDashboardOverview | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [pageError, setPageError] = useState("");
   const [dismissedAlert, setDismissedAlert] = useState(false);
@@ -87,7 +89,9 @@ export function TeacherDashboardPage() {
       setOverview(response);
     } catch (error) {
       setPageError(
-        error instanceof Error ? error.message : "Failed to load teacher dashboard."
+        error instanceof Error
+          ? error.message
+          : "Failed to load teacher dashboard.",
       );
     } finally {
       setIsLoading(false);
@@ -130,7 +134,10 @@ export function TeacherDashboardPage() {
         title: "Present Count",
         value: overview.summary.presentCount.toLocaleString(),
         subtext: `${overview.summary.attendanceRate.toFixed(1)}% attendance rate`,
-        badge: { tone: "success", label: `${delta >= 0 ? "+" : ""}${delta.toFixed(1)}% vs previous` },
+        badge: {
+          tone: "success",
+          label: `${delta >= 0 ? "+" : ""}${delta.toFixed(1)}% vs previous`,
+        },
         accent: "teacher-dashboard-card__value--success",
       },
       {
@@ -138,7 +145,9 @@ export function TeacherDashboardPage() {
         title: "Absent Count",
         value: overview.summary.absentCount.toLocaleString(),
         subtext:
-          overview.summary.absentCount > 0 ? "Needs follow-up" : "No absences recorded",
+          overview.summary.absentCount > 0
+            ? "Needs follow-up"
+            : "No absences recorded",
       },
     ];
   }, [overview]);
@@ -180,32 +189,33 @@ export function TeacherDashboardPage() {
           <p className="page-subtitle">Loading dashboard...</p>
         ) : (
           statCards.map((card) => (
-          <article
-            className="stat-card teacher-dashboard-card"
-            key={card.title}
-          >
-            <div className="stat-card__head">
-              <div className="stat-card__icon-wrap">{card.icon}</div>
-              {card.badge ? (
-                <span className={`pill pill--${card.badge.tone}`}>
-                  {card.badge.label}
-                </span>
-              ) : null}
-            </div>
-            <p className="stat-card__label">{card.title}</p>
-            <div
-              className={`stat-card__value teacher-dashboard-card__value${
-                "accent" in card && card.accent ? ` ${card.accent}` : ""
-              }`}
+            <article
+              className="stat-card teacher-dashboard-card"
+              key={card.title}
             >
-              {card.value}
-            </div>
-            {card.detail ? (
-              <p className="teacher-dashboard-card__detail">{card.detail}</p>
-            ) : null}
-            <p className="stat-card__hint">{card.subtext}</p>
-          </article>
-        )))}
+              <div className="stat-card__head">
+                <div className="stat-card__icon-wrap">{card.icon}</div>
+                {card.badge ? (
+                  <span className={`pill pill--${card.badge.tone}`}>
+                    {card.badge.label}
+                  </span>
+                ) : null}
+              </div>
+              <p className="stat-card__label">{card.title}</p>
+              <div
+                className={`stat-card__value teacher-dashboard-card__value${
+                  "accent" in card && card.accent ? ` ${card.accent}` : ""
+                }`}
+              >
+                {card.value}
+              </div>
+              {card.detail ? (
+                <p className="teacher-dashboard-card__detail">{card.detail}</p>
+              ) : null}
+              <p className="stat-card__hint">{card.subtext}</p>
+            </article>
+          ))
+        )}
       </div>
 
       <div className="teacher-dashboard-content">
@@ -214,7 +224,11 @@ export function TeacherDashboardPage() {
             <h2 className="section-title teacher-dashboard-section-title">
               Recent Activity
             </h2>
-            <button className="teacher-dashboard-link" type="button" onClick={() => void loadOverview()}>
+            <button
+              className="teacher-dashboard-link"
+              type="button"
+              onClick={() => void loadOverview()}
+            >
               Refresh
             </button>
           </div>
@@ -231,25 +245,29 @@ export function TeacherDashboardPage() {
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={3} className="page-subtitle">Loading activity...</td>
+                    <td colSpan={3} className="page-subtitle">
+                      Loading activity...
+                    </td>
                   </tr>
                 ) : overview && overview.recentActivity.length > 0 ? (
                   overview.recentActivity.map((row) => (
-                  <tr key={`${row.studentId}-${row.className}`}>
-                    <td>
-                      <span className="teacher-dashboard-student-name">
-                        {row.fullName}
-                      </span>
-                    </td>
-                    <td>
-                      <StatusBadge status={row.status} />
-                    </td>
-                    <td>{row.className}</td>
-                  </tr>
-                ))
+                    <tr key={`${row.studentId}-${row.className}`}>
+                      <td>
+                        <span className="teacher-dashboard-student-name">
+                          {row.fullName}
+                        </span>
+                      </td>
+                      <td>
+                        <StatusBadge status={row.status} />
+                      </td>
+                      <td>{row.className}</td>
+                    </tr>
+                  ))
                 ) : (
                   <tr>
-                    <td colSpan={3} className="page-subtitle">No recent attendance found.</td>
+                    <td colSpan={3} className="page-subtitle">
+                      No recent attendance found.
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -285,7 +303,66 @@ export function TeacherDashboardPage() {
             </div>
 
             <div className="teacher-dashboard-sidecard__footer">
-              <div className="teacher-dashboard-sidecard__progress" />
+              {/* Countdown progress bar: only show if next class is today */}
+              {overview?.nextClass?.isToday &&
+              overview.nextClass.time &&
+              typeof overview.nextClass.minutesRemaining === "number" ? (
+                <div className="teacher-dashboard-sidecard__progress">
+                  {/* Progress bar fill based on minutes remaining */}
+                  {(() => {
+                    // Defensive: check if time is in 'HH:MM AM/PM' format
+                    const timeStr = overview.nextClass.time;
+                    const match = timeStr.match(
+                      /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i,
+                    );
+                    if (!match) return null;
+                    const [, hourStr, minStr, ampm] = match;
+                    let hour = parseInt(hourStr, 10);
+                    const min = parseInt(minStr, 10);
+                    if (ampm.toUpperCase() === "PM" && hour !== 12) hour += 12;
+                    if (ampm.toUpperCase() === "AM" && hour === 12) hour = 0;
+                    const now = new Date();
+                    const classStart = new Date(
+                      now.getFullYear(),
+                      now.getMonth(),
+                      now.getDate(),
+                      hour,
+                      min,
+                    );
+                    const midnight = new Date(
+                      now.getFullYear(),
+                      now.getMonth(),
+                      now.getDate(),
+                      0,
+                      0,
+                    );
+                    const totalMins = (classStart - midnight) / 60000;
+                    const minsLeft = overview.nextClass.minutesRemaining;
+                    let percent = 100;
+                    if (totalMins > 0) {
+                      percent = Math.max(
+                        0,
+                        Math.min(
+                          100,
+                          ((totalMins - minsLeft) / totalMins) * 100,
+                        ),
+                      );
+                    }
+                    return (
+                      <div
+                        style={{
+                          height: 4,
+                          background: "#111",
+                          width: percent + "%",
+                          transition: "width 0.5s",
+                          borderRadius: 2,
+                          margin: "0 0 2px 0",
+                        }}
+                      />
+                    );
+                  })()}
+                </div>
+              ) : null}
               <p className="teacher-dashboard-sidecard__countdown">
                 {overview?.nextClass
                   ? overview.nextClass.isToday

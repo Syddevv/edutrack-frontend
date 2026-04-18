@@ -4,7 +4,7 @@ import {
   type TeacherClassSelection,
 } from "../components/ChangeClassModal";
 import { ConfirmationDialog } from "../components/ConfirmationDialog";
-import { DownloadIcon, FilterIcon, RefreshIcon } from "../components/Icons";
+import { DownloadIcon, RefreshIcon } from "../components/Icons";
 import {
   getTeacherReports,
   type TeacherReportsOverview,
@@ -61,11 +61,15 @@ export function TeacherReportsPage() {
       const response = await getTeacherReports(classId);
       setOverview(response);
       setSelectedClassId((current) =>
-        current === response.selectedClassId ? current : response.selectedClassId
+        current === response.selectedClassId
+          ? current
+          : response.selectedClassId,
       );
     } catch (error) {
       setPageError(
-        error instanceof Error ? error.message : "Failed to load teacher reports."
+        error instanceof Error
+          ? error.message
+          : "Failed to load teacher reports.",
       );
     } finally {
       setIsLoading(false);
@@ -75,9 +79,9 @@ export function TeacherReportsPage() {
   const selectedClass = useMemo(
     () =>
       overview?.assignments.find(
-        (assignment) => assignment.classId === overview.selectedClassId
+        (assignment) => assignment.classId === overview.selectedClassId,
       ) ?? null,
-    [overview]
+    [overview],
   );
 
   const summaryCards = useMemo<SummaryCard[]>(() => {
@@ -128,14 +132,12 @@ export function TeacherReportsPage() {
             className="button button--primary teacher-reports-change-button"
             type="button"
             onClick={() => setIsChangeClassOpen(true)}
-            disabled={isLoading || !overview || overview.assignments.length === 0}
+            disabled={
+              isLoading || !overview || overview.assignments.length === 0
+            }
           >
             <RefreshIcon className="button__icon" />
             Change Class
-          </button>
-          <button className="button button--secondary" type="button">
-            <FilterIcon className="button__icon" />
-            Filter
           </button>
           <button
             className="button button--primary"
@@ -155,7 +157,10 @@ export function TeacherReportsPage() {
           <p className="page-subtitle">Loading class reports...</p>
         ) : summaryCards.length > 0 ? (
           summaryCards.map((card) => (
-            <article className="stat-card teacher-reports-stat" key={card.title}>
+            <article
+              className="stat-card teacher-reports-stat"
+              key={card.title}
+            >
               <p className="teacher-reports-stat__label">{card.title}</p>
               <div className="teacher-reports-stat__value-row">
                 <div className="teacher-reports-stat__value">{card.value}</div>
@@ -221,7 +226,9 @@ export function TeacherReportsPage() {
                     <td>
                       <div className="rate-cell">
                         <div className="mini-bar">
-                          <span style={{ width: `${student.attendanceRate}%` }} />
+                          <span
+                            style={{ width: `${student.attendanceRate}%` }}
+                          />
                         </div>
                         <span className="rate-cell__value">
                           {student.attendanceRate}%
