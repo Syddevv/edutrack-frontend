@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
 import { ConfirmationDialog } from "../components/ConfirmationDialog";
 import { getReportsOverview, type ReportsOverview } from "../reports";
-import {
-  DownloadIcon,
-  FilterIcon,
-} from "../components/Icons";
+import { DownloadIcon, RefreshIcon } from "../components/Icons";
 
 export function ReportsPage() {
   const [isExportConfirmOpen, setIsExportConfirmOpen] = useState(false);
@@ -24,7 +21,9 @@ export function ReportsPage() {
       const response = await getReportsOverview();
       setOverview(response);
     } catch (error) {
-      setPageError(error instanceof Error ? error.message : "Failed to load reports.");
+      setPageError(
+        error instanceof Error ? error.message : "Failed to load reports.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -41,11 +40,19 @@ export function ReportsPage() {
           </p>
         </div>
         <div className="page-actions">
-          <button className="button button--secondary" type="button" onClick={() => void loadOverview()}>
-            <FilterIcon className="button__icon" />
+          <button
+            className="button button--secondary"
+            type="button"
+            onClick={() => void loadOverview()}
+          >
+            <RefreshIcon className="button__icon" />
             Refresh
           </button>
-          <button className="button button--primary" type="button" onClick={() => setIsExportConfirmOpen(true)}>
+          <button
+            className="button button--primary"
+            type="button"
+            onClick={() => setIsExportConfirmOpen(true)}
+          >
             <DownloadIcon className="button__icon" />
             Export CSV
           </button>
@@ -58,11 +65,15 @@ export function ReportsPage() {
             <div>
               <p className="stat-card__label">Attendance Rate</p>
               <div className="stat-card__value">
-                {overview ? `${overview.reportsSummary.attendanceRate.toFixed(1)}%` : "--"}
+                {overview
+                  ? `${overview.reportsSummary.attendanceRate.toFixed(1)}%`
+                  : "--"}
               </div>
             </div>
             <span className="pill pill--success">
-              {overview ? `${overview.reportsSummary.attendanceRateDelta >= 0 ? "+" : ""}${overview.reportsSummary.attendanceRateDelta.toFixed(1)}%` : "--"}
+              {overview
+                ? `${overview.reportsSummary.attendanceRateDelta >= 0 ? "+" : ""}${overview.reportsSummary.attendanceRateDelta.toFixed(1)}%`
+                : "--"}
             </span>
           </div>
           <p className="stat-card__hint">Compared to last week</p>
@@ -73,7 +84,9 @@ export function ReportsPage() {
             <div>
               <p className="stat-card__label">Late Arrivals</p>
               <div className="stat-card__value">
-                {overview ? overview.reportsSummary.lateArrivalsThisWeek.toLocaleString() : "--"}
+                {overview
+                  ? overview.reportsSummary.lateArrivalsThisWeek.toLocaleString()
+                  : "--"}
               </div>
             </div>
             <span className="pill pill--neutral">This week</span>
@@ -109,34 +122,42 @@ export function ReportsPage() {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={4} className="page-subtitle">Loading reports...</td>
+                  <td colSpan={4} className="page-subtitle">
+                    Loading reports...
+                  </td>
                 </tr>
               ) : overview && overview.absenceBreakdown.length > 0 ? (
                 overview.absenceBreakdown.map((row) => (
-                <tr key={row.studentId}>
-                  <td>
-                    <div className="table-stack">
-                      <div className="person__name">{row.fullName}</div>
-                      <div className="person__meta font-data">{row.studentCode}</div>
-                    </div>
-                  </td>
-                  <td>
-                    <span className="soft-badge">{row.course}</span>
-                  </td>
-                  <td>{row.absences}</td>
-                  <td>
-                    <div className="rate-cell">
-                      <div className="mini-bar">
-                        <span style={{ width: `${row.attendanceRate}%` }} />
+                  <tr key={row.studentId}>
+                    <td>
+                      <div className="table-stack">
+                        <div className="person__name">{row.fullName}</div>
+                        <div className="person__meta font-data">
+                          {row.studentCode}
+                        </div>
                       </div>
-                      <span className="rate-cell__value">{row.attendanceRate}%</span>
-                    </div>
-                  </td>
-                </tr>
-              ))
+                    </td>
+                    <td>
+                      <span className="soft-badge">{row.course}</span>
+                    </td>
+                    <td>{row.absences}</td>
+                    <td>
+                      <div className="rate-cell">
+                        <div className="mini-bar">
+                          <span style={{ width: `${row.attendanceRate}%` }} />
+                        </div>
+                        <span className="rate-cell__value">
+                          {row.attendanceRate}%
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="page-subtitle">No absence data found.</td>
+                  <td colSpan={4} className="page-subtitle">
+                    No absence data found.
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -156,26 +177,29 @@ export function ReportsPage() {
               <p className="page-subtitle">Loading course trends...</p>
             ) : overview && overview.courseStats.length > 0 ? (
               overview.courseStats.map((course) => (
-              <article className="course-card" key={course.course}>
-                <div className="course-card__top">
-                  <div>
-                    <div className="course-card__name">{course.course}</div>
-                    <div className="person__meta">
-                      {course.studentCount.toLocaleString()} {course.studentCount === 1 ? "student" : "students"}
+                <article className="course-card" key={course.course}>
+                  <div className="course-card__top">
+                    <div>
+                      <div className="course-card__name">{course.course}</div>
+                      <div className="person__meta">
+                        {course.studentCount.toLocaleString()}{" "}
+                        {course.studentCount === 1 ? "student" : "students"}
+                      </div>
+                    </div>
+                    <div className="course-card__score">
+                      <span>{course.attendanceRate}%</span>
+                      <span className={`trend trend--${course.trendDirection}`}>
+                        {course.trendDirection === "up"
+                          ? `↗ ${course.trendDelta.toFixed(1)}`
+                          : `↘ ${course.trendDelta.toFixed(1)}`}
+                      </span>
                     </div>
                   </div>
-                  <div className="course-card__score">
-                    <span>{course.attendanceRate}%</span>
-                    <span className={`trend trend--${course.trendDirection}`}>
-                      {course.trendDirection === "up" ? `↗ ${course.trendDelta.toFixed(1)}` : `↘ ${course.trendDelta.toFixed(1)}`}
-                    </span>
+                  <div className="mini-bar mini-bar--full">
+                    <span style={{ width: `${course.attendanceRate}%` }} />
                   </div>
-                </div>
-                <div className="mini-bar mini-bar--full">
-                  <span style={{ width: `${course.attendanceRate}%` }} />
-                </div>
-              </article>
-            ))
+                </article>
+              ))
             ) : (
               <p className="page-subtitle">No course data found.</p>
             )}
@@ -191,7 +215,6 @@ export function ReportsPage() {
         onCancel={() => setIsExportConfirmOpen(false)}
         onConfirm={() => setIsExportConfirmOpen(false)}
       />
-
     </section>
-  )
+  );
 }

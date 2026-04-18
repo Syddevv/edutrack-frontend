@@ -4,7 +4,7 @@ import {
   CheckCircleIcon,
   ClockIcon,
   DownloadIcon,
-  FilterIcon,
+  RefreshIcon,
   SearchIcon,
   UsersIcon,
   XCircleIcon,
@@ -41,7 +41,9 @@ export function DashboardPage() {
       const response = await getDashboardOverview();
       setOverview(response);
     } catch (error) {
-      setPageError(error instanceof Error ? error.message : "Failed to load dashboard.");
+      setPageError(
+        error instanceof Error ? error.message : "Failed to load dashboard.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -59,7 +61,13 @@ export function DashboardPage() {
         return true;
       }
 
-      return [row.fullName, row.studentCode, row.course, row.yearSection, row.status]
+      return [
+        row.fullName,
+        row.studentCode,
+        row.course,
+        row.yearSection,
+        row.status,
+      ]
         .join(" ")
         .toLowerCase()
         .includes(query);
@@ -70,7 +78,10 @@ export function DashboardPage() {
     setCurrentPage(1);
   }, [searchTerm, filteredRows.length]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredRows.length / DASHBOARD_ROWS_PER_PAGE));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredRows.length / DASHBOARD_ROWS_PER_PAGE),
+  );
   const paginatedRows = useMemo(() => {
     const startIndex = (currentPage - 1) * DASHBOARD_ROWS_PER_PAGE;
     return filteredRows.slice(startIndex, startIndex + DASHBOARD_ROWS_PER_PAGE);
@@ -135,8 +146,12 @@ export function DashboardPage() {
           </label>
 
           <div className="toolbar__actions">
-            <button className="button button--secondary" type="button" onClick={() => void loadOverview()}>
-              <FilterIcon className="button__icon" />
+            <button
+              className="button button--secondary"
+              type="button"
+              onClick={() => void loadOverview()}
+            >
+              <RefreshIcon className="button__icon" />
               Refresh
             </button>
             <button
@@ -175,7 +190,9 @@ export function DashboardPage() {
                       <td>
                         <div>
                           <div className="person__name">{row.fullName}</div>
-                          <div className="person__meta font-data">ID: {row.studentCode}</div>
+                          <div className="person__meta font-data">
+                            ID: {row.studentCode}
+                          </div>
                         </div>
                       </td>
                       <td>{row.course}</td>
@@ -183,7 +200,9 @@ export function DashboardPage() {
                       <td>{row.date ?? "No Record"}</td>
                       <td>
                         {getStatusTone(row.status) ? (
-                          <span className={`status-chip status-chip--${getStatusTone(row.status)}`}>
+                          <span
+                            className={`status-chip status-chip--${getStatusTone(row.status)}`}
+                          >
                             {row.status}
                           </span>
                         ) : (
@@ -199,14 +218,19 @@ export function DashboardPage() {
             <div className="table-footer">
               <span>
                 Showing {(currentPage - 1) * DASHBOARD_ROWS_PER_PAGE + 1}-
-                {Math.min(currentPage * DASHBOARD_ROWS_PER_PAGE, filteredRows.length)} of{" "}
-                {filteredRows.length} results
+                {Math.min(
+                  currentPage * DASHBOARD_ROWS_PER_PAGE,
+                  filteredRows.length,
+                )}{" "}
+                of {filteredRows.length} results
               </span>
               <div className="pagination">
                 <button
                   className="button button--secondary button--small"
                   type="button"
-                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  onClick={() =>
+                    setCurrentPage((page) => Math.max(1, page - 1))
+                  }
                   disabled={currentPage === 1}
                 >
                   Previous
@@ -214,7 +238,9 @@ export function DashboardPage() {
                 <button
                   className="button button--secondary button--small"
                   type="button"
-                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                  onClick={() =>
+                    setCurrentPage((page) => Math.min(totalPages, page + 1))
+                  }
                   disabled={currentPage === totalPages}
                 >
                   Next
