@@ -1,6 +1,9 @@
+import { useState } from 'react'
 import { CheckCircleIcon, ClockIcon, SchoolIcon, SlidersIcon } from '../components/Icons'
 
 export function SettingsPage() {
+  const [isAiInsightsEnabled, setIsAiInsightsEnabled] = useState(false)
+
   return (
     <section className="page">
       <header className="page__topbar page__topbar--stack">
@@ -72,7 +75,13 @@ export function SettingsPage() {
                 <div className="field__label">AI Insights Assistant</div>
                 <div className="field__hint">Smart attendance trends.</div>
               </div>
-              <button className="toggle toggle--off" type="button" aria-label="Toggle AI Insights" />
+              <button
+                className={`toggle${isAiInsightsEnabled ? ' toggle--on' : ''}`}
+                type="button"
+                aria-label="Toggle AI Insights"
+                aria-pressed={isAiInsightsEnabled}
+                onClick={() => setIsAiInsightsEnabled((current) => !current)}
+              />
             </div>
 
             <label className="field">
@@ -125,14 +134,6 @@ export function SettingsPage() {
             </span>
             <span className="field__hint">Buffer time before marked absent.</span>
           </label>
-
-          <div className="field">
-            <span className="field__label">Allow Teachers Edit Past</span>
-            <div className="toggle-row">
-              <button className="toggle toggle--on" type="button" aria-label="Allow edits" />
-            </div>
-            <span className="field__hint">Allow retroactive changes to attendance.</span>
-          </div>
         </div>
 
         <div className="settings-divider" />

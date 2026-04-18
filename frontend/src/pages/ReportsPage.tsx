@@ -2,9 +2,7 @@ import { useState } from "react";
 import { ConfirmationDialog } from "../components/ConfirmationDialog";
 import {
   DownloadIcon,
-  FileTextIcon,
   FilterIcon,
-  TableIcon,
 } from "../components/Icons";
 
 const absenceRows = [
@@ -20,13 +18,6 @@ const courseStats = [
   ["BSCA", "196 students", "87%", "down", "2.4"],
   ["BSAIS", "220 students", "93%", "up", "0.9"],
   ["ACT", "264 students", "89%", "up", "1.2"],
-] as const;
-
-const reportHistory = [
-  ["Weekly Attendance Summary", "Oct 24, 2023", "PDF", "file"],
-  ["BSIS Absence Report", "Oct 23, 2023", "CSV", "table"],
-  ["Staff Punctuality Log", "Oct 20, 2023", "XLS", "table"],
-  ["Monthly Course Review", "Oct 01, 2023", "PDF", "file"],
 ] as const;
 
 export function ReportsPage() {
@@ -158,56 +149,6 @@ export function ReportsPage() {
           </div>
         </aside>
       </div>
-
-      <section className="panel reports-history">
-        <div className="panel__title-row">
-          <div>
-            <h2 className="section-title">Report History</h2>
-          </div>
-        </div>
-
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>REPORT NAME</th>
-              <th>DATE GENERATED</th>
-              <th>TYPE</th>
-              <th>ACTION</th>
-            </tr>
-          </thead>
-          <tbody>
-            {reportHistory.map((report) => (
-              <tr key={report[0]}>
-                <td>
-                  <div className="report-name">
-                    <span className="report-name__icon">
-                      {report[3] === "file" ? (
-                        <FileTextIcon className="table-action-icon" />
-                      ) : (
-                        <TableIcon className="table-action-icon" />
-                      )}
-                    </span>
-                    <span className="person__name">{report[0]}</span>
-                  </div>
-                </td>
-                <td>{report[1]}</td>
-                <td>
-                  <span className="soft-badge">{report[2]}</span>
-                </td>
-                <td className="table-icon-cell">
-                  <button
-                    className="icon-button icon-button--ghost"
-                    type="button"
-                    aria-label="Download report"
-                  >
-                    <DownloadIcon className="table-action-icon" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
 
       <ConfirmationDialog
         isOpen={isExportConfirmOpen}
