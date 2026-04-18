@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { ConfirmationDialog } from '../components/ConfirmationDialog'
+import { useEffect, useMemo, useState } from "react";
+import { ConfirmationDialog } from "../components/ConfirmationDialog";
 import {
   CheckCircleIcon,
   ClockIcon,
@@ -8,53 +8,106 @@ import {
   SearchIcon,
   UsersIcon,
   XCircleIcon,
-} from '../components/Icons'
+} from "../components/Icons";
+import { getDashboardOverview, type DashboardOverview } from "../dashboard";
 
-const overviewCards = [
-  {
-    icon: <UsersIcon className="stat-card__icon" />,
-    title: 'Total Students',
-    value: '1,240',
-  },
-  {
-    icon: <CheckCircleIcon className="stat-card__icon" />,
-    title: 'Present Today',
-    value: '1,150',
-    badge: { tone: 'success', label: '92%' },
-  },
-  {
-    icon: <XCircleIcon className="stat-card__icon" />,
-    title: 'Absent Today',
-    value: '45',
-    badge: { tone: 'danger', label: '+2%' },
-  },
-  {
-    icon: <ClockIcon className="stat-card__icon" />,
-    title: 'Late Today',
-    value: '45',
-    badge: { tone: 'neutral', label: '-5%' },
-  },
-]
+const DASHBOARD_ROWS_PER_PAGE = 10;
 
-const rows = [
-  ['Alice Johnson', '#001', 'BSIS', '1st Year - A', 'Oct 24, 2023', 'Present', '08:00 AM'],
-  ['Bob Smith', '#002', 'BSIS', '1st Year - A', 'Oct 24, 2023', 'Absent', '--:--'],
-  ['Charlie Brown', '#003', 'BSOM', '2nd Year - B', 'Oct 24, 2023', 'Present', '08:00 AM'],
-  ['David Lee', '#004', 'BSCA', '1st Year - A', 'Oct 24, 2023', 'Late', '08:45 AM'],
-  ['Eva Green', '#005', 'BSAIS', '3rd Year - B', 'Oct 24, 2023', 'Present', '08:00 AM'],
-  ['Frank Miller', '#006', 'ACT', '2nd Year - A', 'Oct 24, 2023', 'Present', '08:00 AM'],
-] as const
+function getStatusTone(status: DashboardOverview["rows"][number]["status"]) {
+  if (status === "No Record") {
+    return null;
+  }
+
+  return status.toLowerCase();
+}
 
 export function DashboardPage() {
-  const [isExportConfirmOpen, setIsExportConfirmOpen] = useState(false)
+  const [isExportConfirmOpen, setIsExportConfirmOpen] = useState(false);
+  const [overview, setOverview] = useState<DashboardOverview | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [pageError, setPageError] = useState("");
+
+  useEffect(() => {
+    void loadOverview();
+  }, []);
+
+  async function loadOverview() {
+    setIsLoading(true);
+    setPageError("");
+
+    try {
+      const response = await getDashboardOverview();
+      setOverview(response);
+    } catch (error) {
+      setPageError(error instanceof Error ? error.message : "Failed to load dashboard.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  const filteredRows = useMemo(() => {
+    if (!overview) {
+      return [];
+    }
+
+    const query = searchTerm.trim().toLowerCase();
+
+    return overview.rows.filter((row) => {
+      if (query === "") {
+        return true;
+      }
+
+      return [row.fullName, row.studentCode, row.course, row.yearSection, row.status]
+        .join(" ")
+        .toLowerCase()
+        .includes(query);
+    });
+  }, [overview, searchTerm]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filteredRows.length]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / DASHBOARD_ROWS_PER_PAGE));
+  const paginatedRows = useMemo(() => {
+    const startIndex = (currentPage - 1) * DASHBOARD_ROWS_PER_PAGE;
+    return filteredRows.slice(startIndex, startIndex + DASHBOARD_ROWS_PER_PAGE);
+  }, [currentPage, filteredRows]);
+
+  const overviewCards = overview
+    ? [
+        {
+          icon: <UsersIcon className="stat-card__icon" />,
+          title: "Total Students",
+          value: overview.summary.totalStudents.toLocaleString(),
+        },
+        {
+          icon: <CheckCircleIcon className="stat-card__icon" />,
+          title: "Present Today",
+          value: overview.summary.presentToday.toLocaleString(),
+        },
+        {
+          icon: <XCircleIcon className="stat-card__icon" />,
+          title: "Absent Today",
+          value: overview.summary.absentToday.toLocaleString(),
+        },
+        {
+          icon: <ClockIcon className="stat-card__icon" />,
+          title: "Late Today",
+          value: overview.summary.lateToday.toLocaleString(),
+        },
+      ]
+    : [];
 
   return (
-    <section className="page">
+    <section className="page dashboard-page">
       <header className="page__topbar">
         <div>
           <h1 className="page-title heading-tight">Dashboard</h1>
         </div>
-        <div className="page-date">October 24, 2023</div>
+        <div className="page-date">{overview?.dateLabel ?? ""}</div>
       </header>
 
       <div className="stats-grid stats-grid--four">
@@ -62,9 +115,6 @@ export function DashboardPage() {
           <article className="stat-card" key={card.title}>
             <div className="stat-card__head">
               <div className="stat-card__icon-wrap">{card.icon}</div>
-              {card.badge ? (
-                <span className={`pill pill--${card.badge.tone}`}>{card.badge.label}</span>
-              ) : null}
             </div>
             <p className="stat-card__label">{card.title}</p>
             <div className="stat-card__value">{card.value}</div>
@@ -72,73 +122,116 @@ export function DashboardPage() {
         ))}
       </div>
 
-      <section className="panel">
+      <section className="panel dashboard-page__panel">
         <div className="toolbar">
           <label className="search-field">
             <SearchIcon className="search-field__icon" />
-            <input type="text" placeholder="Search students by name or ID..." />
+            <input
+              type="text"
+              placeholder="Search students by name or ID..."
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+            />
           </label>
 
           <div className="toolbar__actions">
-            <button className="button button--secondary" type="button">
+            <button className="button button--secondary" type="button" onClick={() => void loadOverview()}>
               <FilterIcon className="button__icon" />
-              Filter
+              Refresh
             </button>
-            <button className="button button--primary" type="button" onClick={() => setIsExportConfirmOpen(true)}>
+            <button
+              className="button button--primary"
+              type="button"
+              onClick={() => setIsExportConfirmOpen(true)}
+            >
               <DownloadIcon className="button__icon" />
               Export CSV
             </button>
           </div>
         </div>
 
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>STUDENT NAME</th>
-              <th>COURSE</th>
-              <th>YEAR</th>
-              <th>DATE</th>
-              <th>STATUS</th>
-              <th>TIME IN</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row[1]}>
-                <td>
-                  <div>
-                    <div className="person__name">{row[0]}</div>
-                    <div className="person__meta font-data">ID: {row[1]}</div>
-                  </div>
-                </td>
-                <td>{row[2]}</td>
-                <td>{row[3]}</td>
-                <td>{row[4]}</td>
-                <td>
-                  <span className={`status-chip status-chip--${row[5].toLowerCase()}`}>{row[5]}</span>
-                </td>
-                <td className="font-data">{row[6]}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {pageError ? <p className="login-card__error">{pageError}</p> : null}
 
-        <div className="table-footer">
-          <span>Showing 1 to 6 of 1,240 results</span>
-          <div className="pagination">
-            <button className="button button--secondary button--small" type="button">Previous</button>
-            <button className="button button--secondary button--small" type="button">Next</button>
-          </div>
-        </div>
+        {isLoading ? (
+          <p className="page-subtitle">Loading dashboard...</p>
+        ) : filteredRows.length === 0 ? (
+          <p className="page-subtitle">No dashboard records found.</p>
+        ) : (
+          <>
+            <div className="dashboard-page__table-scroll">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>STUDENT NAME</th>
+                    <th>COURSE</th>
+                    <th>YEAR</th>
+                    <th>DATE</th>
+                    <th>STATUS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedRows.map((row) => (
+                    <tr key={`${row.studentId}-${row.studentCode}`}>
+                      <td>
+                        <div>
+                          <div className="person__name">{row.fullName}</div>
+                          <div className="person__meta font-data">ID: {row.studentCode}</div>
+                        </div>
+                      </td>
+                      <td>{row.course}</td>
+                      <td>{row.yearSection}</td>
+                      <td>{row.date ?? "No Record"}</td>
+                      <td>
+                        {getStatusTone(row.status) ? (
+                          <span className={`status-chip status-chip--${getStatusTone(row.status)}`}>
+                            {row.status}
+                          </span>
+                        ) : (
+                          <span className="data-badge">{row.status}</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="table-footer">
+              <span>
+                Showing {(currentPage - 1) * DASHBOARD_ROWS_PER_PAGE + 1}-
+                {Math.min(currentPage * DASHBOARD_ROWS_PER_PAGE, filteredRows.length)} of{" "}
+                {filteredRows.length} results
+              </span>
+              <div className="pagination">
+                <button
+                  className="button button--secondary button--small"
+                  type="button"
+                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </button>
+                <button
+                  className="button button--secondary button--small"
+                  type="button"
+                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </section>
       <ConfirmationDialog
         isOpen={isExportConfirmOpen}
         title="Export Attendance CSV"
         message="Export the current attendance overview as a CSV file?"
-        confirmLabel="Export CSV"
+        confirmLabel="Close"
         onCancel={() => setIsExportConfirmOpen(false)}
         onConfirm={() => setIsExportConfirmOpen(false)}
       />
     </section>
-  )
+  );
 }

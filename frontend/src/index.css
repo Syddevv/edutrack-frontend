@@ -232,6 +232,30 @@ input {
   grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
 }
 
+.dashboard-page {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.dashboard-page__panel {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.dashboard-page__table-scroll {
+  min-height: 0;
+  overflow: auto;
+}
+
+.dashboard-page__table-scroll .data-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
 .stat-card {
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -2850,6 +2874,16 @@ input {
   .page,
   .login-screen {
     padding: 18px;
+  }
+
+  .dashboard-page {
+    height: auto;
+    overflow: visible;
+  }
+
+  .dashboard-page__panel,
+  .dashboard-page__table-scroll {
+    overflow: visible;
   }
 
   .app-shell__content {
