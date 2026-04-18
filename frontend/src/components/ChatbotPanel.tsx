@@ -1,6 +1,7 @@
 import { ChatbotIcon, CloseIcon, SendIcon } from "./Icons";
 
 type ChatbotPanelProps = {
+  isEnabled: boolean;
   isOpen: boolean;
   onClose: () => void;
   onOpen: () => void;
@@ -12,7 +13,12 @@ const absentStudents = [
   ["Lia Santos", "Medical Appointment"],
 ] as const;
 
-export function ChatbotPanel({ isOpen, onClose, onOpen }: ChatbotPanelProps) {
+export function ChatbotPanel({
+  isEnabled,
+  isOpen,
+  onClose,
+  onOpen,
+}: ChatbotPanelProps) {
   return (
     <>
       {isOpen ? (
@@ -25,15 +31,18 @@ export function ChatbotPanel({ isOpen, onClose, onOpen }: ChatbotPanelProps) {
       ) : null}
 
       <button
-        className={`floating-button${isOpen ? " floating-button--hidden" : ""}`}
+        className={`floating-button${isOpen ? " floating-button--hidden" : ""}${
+          !isEnabled ? " floating-button--disabled" : ""
+        }`}
         type="button"
-        aria-label="Open chatbot"
-        onClick={onOpen}
+        aria-label={isEnabled ? "Open chatbot" : "AI assistant disabled"}
+        onClick={isEnabled ? onOpen : undefined}
+        disabled={!isEnabled}
       >
         <ChatbotIcon className="floating-button__icon" />
       </button>
 
-      {isOpen ? (
+      {isOpen && isEnabled ? (
         <aside className="chatbot-panel" aria-label="AI Assistant">
           <header className="chatbot-panel__header">
             <div className="chatbot-panel__identity">

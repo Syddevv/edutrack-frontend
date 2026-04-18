@@ -41,9 +41,15 @@ function getStatusTone(status: StudentRecord["attendanceStatus"]) {
 export function StudentsPage() {
   const [students, setStudents] = useState<StudentRecord[]>([]);
   const [lookups, setLookups] = useState<StudentLookupData>(emptyLookups);
-  const [activeModal, setActiveModal] = useState<"add" | "import" | "edit" | null>(null);
-  const [studentToDelete, setStudentToDelete] = useState<StudentRecord | null>(null);
-  const [studentToEdit, setStudentToEdit] = useState<StudentRecord | null>(null);
+  const [activeModal, setActiveModal] = useState<
+    "add" | "import" | "edit" | null
+  >(null);
+  const [studentToDelete, setStudentToDelete] = useState<StudentRecord | null>(
+    null,
+  );
+  const [studentToEdit, setStudentToEdit] = useState<StudentRecord | null>(
+    null,
+  );
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCourseId, setSelectedCourseId] = useState<number>(0);
   const [selectedYearLevelId, setSelectedYearLevelId] = useState<number>(0);
@@ -68,7 +74,9 @@ export function StudentsPage() {
       setStudents(response.students);
       setLookups(response.lookups);
     } catch (error) {
-      setPageError(error instanceof Error ? error.message : "Failed to load students.");
+      setPageError(
+        error instanceof Error ? error.message : "Failed to load students.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -90,8 +98,11 @@ export function StudentsPage() {
         .toLowerCase();
 
       const matchesSearch = query === "" || searchableText.includes(query);
-      const matchesCourse = selectedCourseId === 0 || student.course.id === selectedCourseId;
-      const matchesYear = selectedYearLevelId === 0 || student.yearLevel.id === selectedYearLevelId;
+      const matchesCourse =
+        selectedCourseId === 0 || student.course.id === selectedCourseId;
+      const matchesYear =
+        selectedYearLevelId === 0 ||
+        student.yearLevel.id === selectedYearLevelId;
 
       return matchesSearch && matchesCourse && matchesYear;
     });
@@ -101,13 +112,18 @@ export function StudentsPage() {
     setCurrentPage(1);
   }, [searchTerm, selectedCourseId, selectedYearLevelId, students.length]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / STUDENTS_PER_PAGE));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredStudents.length / STUDENTS_PER_PAGE),
+  );
   const paginatedStudents = useMemo(() => {
     const startIndex = (currentPage - 1) * STUDENTS_PER_PAGE;
     return filteredStudents.slice(startIndex, startIndex + STUDENTS_PER_PAGE);
   }, [currentPage, filteredStudents]);
 
-  async function handleCreateStudent(input: Parameters<typeof createStudent>[0]) {
+  async function handleCreateStudent(
+    input: Parameters<typeof createStudent>[0],
+  ) {
     setIsAddSubmitting(true);
 
     try {
@@ -148,7 +164,9 @@ export function StudentsPage() {
     }
   }
 
-  async function handleImportStudents(file: File): Promise<ImportStudentsResult> {
+  async function handleImportStudents(
+    file: File,
+  ): Promise<ImportStudentsResult> {
     setIsImportSubmitting(true);
 
     try {
@@ -217,7 +235,9 @@ export function StudentsPage() {
               <select
                 className="select-like students-select"
                 value={selectedCourseId}
-                onChange={(event) => setSelectedCourseId(Number(event.target.value))}
+                onChange={(event) =>
+                  setSelectedCourseId(Number(event.target.value))
+                }
               >
                 <option value={0}>All Courses</option>
                 {lookups.courses.map((course) => (
@@ -229,7 +249,9 @@ export function StudentsPage() {
               <select
                 className="select-like students-select"
                 value={selectedYearLevelId}
-                onChange={(event) => setSelectedYearLevelId(Number(event.target.value))}
+                onChange={(event) =>
+                  setSelectedYearLevelId(Number(event.target.value))
+                }
               >
                 <option value={0}>All Years</option>
                 {lookups.yearLevels.map((yearLevel) => (
@@ -282,7 +304,9 @@ export function StudentsPage() {
                       </div>
                     </td>
                     <td>
-                      <span className="data-badge font-data">{student.studentId}</span>
+                      <span className="data-badge font-data">
+                        {student.studentId}
+                      </span>
                     </td>
                     <td>
                       <span className="soft-badge">
@@ -299,7 +323,9 @@ export function StudentsPage() {
                           {student.attendanceStatus}
                         </span>
                       ) : (
-                        <span className="data-badge">{student.attendanceStatus}</span>
+                        <span className="data-badge">
+                          {student.attendanceStatus}
+                        </span>
                       )}
                     </td>
                     <td>
@@ -335,8 +361,11 @@ export function StudentsPage() {
           <div className="table-footer students-page__footer">
             <span>
               Showing {(currentPage - 1) * STUDENTS_PER_PAGE + 1}-
-              {Math.min(currentPage * STUDENTS_PER_PAGE, filteredStudents.length)} of{" "}
-              {filteredStudents.length}
+              {Math.min(
+                currentPage * STUDENTS_PER_PAGE,
+                filteredStudents.length,
+              )}{" "}
+              of {filteredStudents.length}
             </span>
             <div className="pagination">
               <button
@@ -353,7 +382,9 @@ export function StudentsPage() {
               <button
                 className="button button--secondary button--small"
                 type="button"
-                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                onClick={() =>
+                  setCurrentPage((page) => Math.min(totalPages, page + 1))
+                }
                 disabled={currentPage === totalPages}
               >
                 Next

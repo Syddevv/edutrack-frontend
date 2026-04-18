@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "./components/AppShell";
 import { getCurrentUser, login, logout, type AuthUser } from "./auth";
+import { defaultAppSettings, getAppSettings, type AppSettings } from "./settings";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { ReportsPage } from "./pages/ReportsPage";
@@ -43,8 +44,10 @@ function normalizeRole(role: string): "admin" | "teacher" {
   return role.toLowerCase() === "teacher" ? "teacher" : "admin";
 }
 
-function defaultRouteForRole(role: string): RouteKey {
-  return normalizeRole(role) === "teacher" ? "teacher-dashboard" : "dashboard";
+function defaultRouteForRole(role: string, settings: AppSettings): RouteKey {
+  return normalizeRole(role) === "teacher"
+    ? "teacher-dashboard"
+    : settings.defaultLandingPage;
 }
 
 function isRouteAllowed(route: RouteKey, user: AuthUser | null): boolean {
@@ -67,6 +70,8 @@ function App() {
   const [route, setRoute] = useState<RouteKey>(getRouteFromHash);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
+  const [settings, setSettings] = useState<AppSettings>(defaultAppSettings);
+  const [isSettingsReady, setIsSettingsReady] = useState(false);
 
   useEffect(() => {
     const onHashChange = () => {
@@ -79,8 +84,23 @@ function App() {
 
   useEffect(() => {
     getCurrentUser()
-      .then((user) => setAuthUser(user))
-      .catch(() => setAuthUser(null))
+      .then(async (user) => {
+        setAuthUser(user);
+
+        try {
+          const loadedSettings = await getAppSettings();
+          setSettings(loadedSettings);
+        } catch {
+          setSettings(defaultAppSettings);
+        } finally {
+          setIsSettingsReady(true);
+        }
+      })
+      .catch(() => {
+        setAuthUser(null);
+        setSettings(defaultAppSettings);
+        setIsSettingsReady(true);
+      })
       .finally(() => setIsAuthReady(true));
   }, []);
 
@@ -89,14 +109,14 @@ function App() {
   };
 
   useEffect(() => {
-    if (!isAuthReady) {
+    if (!isAuthReady || !isSettingsReady) {
       return;
     }
 
     if (!isRouteAllowed(route, authUser)) {
-      navigate(authUser ? defaultRouteForRole(authUser.role) : "login");
+      navigate(authUser ? defaultRouteForRole(authUser.role, settings) : "login");
     }
-  }, [authUser, isAuthReady, route]);
+  }, [authUser, isAuthReady, isSettingsReady, route, settings]);
 
   const handleLogin = async ({
     email,
@@ -116,7 +136,14 @@ function App() {
       }
 
       setAuthUser(user);
-      navigate(defaultRouteForRole(user.role));
+      try {
+        const loadedSettings = await getAppSettings();
+        setSettings(loadedSettings);
+        navigate(defaultRouteForRole(user.role, loadedSettings));
+      } catch {
+        setSettings(defaultAppSettings);
+        navigate(defaultRouteForRole(user.role, defaultAppSettings));
+      }
       return null;
     } catch (error) {
       return error instanceof Error ? error.message : "Unable to log in.";
@@ -132,7 +159,7 @@ function App() {
     }
   };
 
-  if (!isAuthReady) {
+  if (!isAuthReady || !isSettingsReady) {
     return <div className="login-screen">Loading...</div>;
   }
 
@@ -145,50 +172,93 @@ function App() {
       return <LoginPage onLogin={handleLogin} />;
     case "students":
       return (
-        <AppShell activeRoute={route} onNavigate={navigate} onLogout={handleLogout}>
+        <AppShell
+          activeRoute={route}
+          settings={settings}
+          onNavigate={navigate}
+          onLogout={handleLogout}
+        >
           <StudentsPage />
         </AppShell>
       );
     case "teachers":
       return (
-        <AppShell activeRoute={route} onNavigate={navigate} onLogout={handleLogout}>
+        <AppShell
+          activeRoute={route}
+          settings={settings}
+          onNavigate={navigate}
+          onLogout={handleLogout}
+        >
           <TeachersPage />
         </AppShell>
       );
     case "reports":
       return (
-        <AppShell activeRoute={route} onNavigate={navigate} onLogout={handleLogout}>
+        <AppShell
+          activeRoute={route}
+          settings={settings}
+          onNavigate={navigate}
+          onLogout={handleLogout}
+        >
           <ReportsPage />
         </AppShell>
       );
     case "settings":
       return (
-        <AppShell activeRoute={route} onNavigate={navigate} onLogout={handleLogout}>
-          <SettingsPage />
+        <AppShell
+          activeRoute={route}
+          settings={settings}
+          onNavigate={navigate}
+          onLogout={handleLogout}
+        >
+          <SettingsPage settings={settings} onSettingsSaved={setSettings} />
         </AppShell>
       );
     case "teacher-dashboard":
       return (
-        <AppShell activeRoute={route} onNavigate={navigate} onLogout={handleLogout} variant="teacher">
+        <AppShell
+          activeRoute={route}
+          settings={settings}
+          onNavigate={navigate}
+          onLogout={handleLogout}
+          variant="teacher"
+        >
           <TeacherDashboardPage />
         </AppShell>
       );
     case "attendance":
       return (
-        <AppShell activeRoute={route} onNavigate={navigate} onLogout={handleLogout} variant="teacher">
+        <AppShell
+          activeRoute={route}
+          settings={settings}
+          onNavigate={navigate}
+          onLogout={handleLogout}
+          variant="teacher"
+        >
           <TeacherAttendancePage />
         </AppShell>
       );
     case "teacher-reports":
       return (
-        <AppShell activeRoute={route} onNavigate={navigate} onLogout={handleLogout} variant="teacher">
+        <AppShell
+          activeRoute={route}
+          settings={settings}
+          onNavigate={navigate}
+          onLogout={handleLogout}
+          variant="teacher"
+        >
           <TeacherReportsPage />
         </AppShell>
       );
     case "dashboard":
     default:
       return (
-        <AppShell activeRoute="dashboard" onNavigate={navigate} onLogout={handleLogout}>
+        <AppShell
+          activeRoute="dashboard"
+          settings={settings}
+          onNavigate={navigate}
+          onLogout={handleLogout}
+        >
           <DashboardPage />
         </AppShell>
       );

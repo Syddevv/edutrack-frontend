@@ -2041,7 +2041,7 @@ input {
 }
 
 .settings-form--policy {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .field__hint {
@@ -2125,7 +2125,7 @@ input {
 }
 
 .settings-actions--compact {
-  justify-content: flex-end;
+  justify-content: space-between;
   padding-top: 20px;
 }
 
@@ -2151,6 +2151,12 @@ input {
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
   cursor: pointer;
   z-index: 40;
+}
+
+.floating-button--disabled {
+  opacity: 0.42;
+  pointer-events: none;
+  box-shadow: none;
 }
 
 .floating-button--hidden {

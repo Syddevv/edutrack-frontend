@@ -1,5 +1,6 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { RouteKey } from "../App";
+import type { AppSettings } from "../settings";
 import { ChatbotPanel } from "./ChatbotPanel";
 import { ConfirmationDialog } from "./ConfirmationDialog";
 import {
@@ -16,6 +17,7 @@ type AppShellProps = {
   activeRoute: RouteKey;
   children: ReactNode;
   variant?: "admin" | "teacher";
+  settings: AppSettings;
   onNavigate: (route: RouteKey) => void;
   onLogout: () => Promise<void>;
 };
@@ -85,6 +87,7 @@ export function AppShell({
   activeRoute,
   children,
   variant = "admin",
+  settings,
   onNavigate,
   onLogout,
 }: AppShellProps) {
@@ -92,6 +95,12 @@ export function AppShell({
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const sidebarItems = variant === "teacher" ? teacherNavItems : navItems;
+
+  useEffect(() => {
+    if (!settings.aiInsightsEnabled && isChatbotOpen) {
+      setIsChatbotOpen(false);
+    }
+  }, [isChatbotOpen, settings.aiInsightsEnabled]);
 
   return (
     <div className="app-shell">
@@ -146,9 +155,14 @@ export function AppShell({
         }}
       />
       <ChatbotPanel
+        isEnabled={settings.aiInsightsEnabled}
         isOpen={isChatbotOpen}
         onClose={() => setIsChatbotOpen(false)}
-        onOpen={() => setIsChatbotOpen(true)}
+        onOpen={() => {
+          if (settings.aiInsightsEnabled) {
+            setIsChatbotOpen(true);
+          }
+        }}
       />
     </div>
   );

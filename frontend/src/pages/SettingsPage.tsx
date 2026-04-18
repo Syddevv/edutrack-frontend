@@ -1,13 +1,115 @@
-import { useState } from "react";
-import {
-  CheckCircleIcon,
-  ClockIcon,
-  SchoolIcon,
-  SlidersIcon,
-} from "../components/Icons";
+import { useEffect, useState } from "react";
+import { CheckCircleIcon, SchoolIcon, SlidersIcon } from "../components/Icons";
+import { type AppSettings, updateAppSettings } from "../settings";
 
-export function SettingsPage() {
-  const [isAiInsightsEnabled, setIsAiInsightsEnabled] = useState(false);
+type SettingsPageProps = {
+  settings: AppSettings;
+  onSettingsSaved: (settings: AppSettings) => void;
+};
+
+const landingPageOptions: Array<{
+  label: string;
+  value: AppSettings["defaultLandingPage"];
+}> = [
+  { label: "Dashboard Overview", value: "dashboard" },
+  { label: "Students", value: "students" },
+  { label: "Teachers", value: "teachers" },
+  { label: "Reports", value: "reports" },
+  { label: "Settings", value: "settings" },
+];
+
+function formatAcademicYear(startYear: number) {
+  return `${startYear} - ${startYear + 1}`;
+}
+
+export function SettingsPage({ settings, onSettingsSaved }: SettingsPageProps) {
+  const [schoolName, setSchoolName] = useState(settings.schoolName);
+  const [academicYearStart, setAcademicYearStart] = useState(
+    settings.academicYearStart,
+  );
+  const [aiInsightsEnabled, setAiInsightsEnabled] = useState(
+    settings.aiInsightsEnabled,
+  );
+  const [defaultLandingPage, setDefaultLandingPage] = useState(
+    settings.defaultLandingPage,
+  );
+  const [lateThresholdMinutes, setLateThresholdMinutes] = useState(
+    settings.lateThresholdMinutes,
+  );
+  const [profileMessage, setProfileMessage] = useState("");
+  const [preferencesMessage, setPreferencesMessage] = useState("");
+  const [policyMessage, setPolicyMessage] = useState("");
+  const [pageError, setPageError] = useState("");
+
+  useEffect(() => {
+    setSchoolName(settings.schoolName);
+    setAcademicYearStart(settings.academicYearStart);
+    setAiInsightsEnabled(settings.aiInsightsEnabled);
+    setDefaultLandingPage(settings.defaultLandingPage);
+    setLateThresholdMinutes(settings.lateThresholdMinutes);
+  }, [settings]);
+
+  async function saveProfile() {
+    setPageError("");
+    setProfileMessage("");
+
+    try {
+      const updated = await updateAppSettings({
+        schoolName,
+        academicYearStart,
+      });
+
+      onSettingsSaved(updated);
+      setProfileMessage("School profile saved.");
+    } catch (error) {
+      setPageError(
+        error instanceof Error
+          ? error.message
+          : "Failed to save school profile.",
+      );
+    }
+  }
+
+  async function savePreferences() {
+    setPageError("");
+    setPreferencesMessage("");
+
+    try {
+      const updated = await updateAppSettings({
+        aiInsightsEnabled,
+        defaultLandingPage,
+      });
+
+      onSettingsSaved(updated);
+      setPreferencesMessage("System preferences saved.");
+    } catch (error) {
+      setPageError(
+        error instanceof Error
+          ? error.message
+          : "Failed to save system preferences.",
+      );
+    }
+  }
+
+  async function savePolicy() {
+    setPageError("");
+    setPolicyMessage("");
+
+    try {
+      const updated = await updateAppSettings({
+        lateThresholdMinutes,
+      });
+
+      onSettingsSaved(updated);
+      setPolicyMessage("Attendance policy saved.");
+    } catch (error) {
+      setPageError(
+        error instanceof Error
+          ? error.message
+          : "Failed to save attendance policy.",
+      );
+    }
+  }
 
   return (
     <section className="page">
@@ -20,6 +122,8 @@ export function SettingsPage() {
           </p>
         </div>
       </header>
+
+      {pageError ? <p className="login-card__error">{pageError}</p> : null}
 
       <div className="settings-grid">
         <section className="panel settings-card settings-card--wide">
@@ -41,7 +145,14 @@ export function SettingsPage() {
             <label className="field">
               <span className="field__label">School Name</span>
               <span className="field__input field__input--muted">
-                <input type="text" defaultValue="Lincoln High School" />
+                <input
+                  type="text"
+                  value={schoolName}
+                  onChange={(event) => {
+                    setProfileMessage("");
+                    setSchoolName(event.target.value);
+                  }}
+                />
               </span>
               <span className="field__hint">
                 Update your institution&apos;s display name.
@@ -51,23 +162,33 @@ export function SettingsPage() {
             <label className="field">
               <span className="field__label">Academic Year</span>
               <span className="select-wrap">
-                <select defaultValue="2023 - 2024">
-                  <option>2023 - 2024</option>
-                  <option>2024 - 2025</option>
-                  <option>2025 - 2026</option>
+                <select
+                  value={academicYearStart}
+                  onChange={(event) => {
+                    setProfileMessage("");
+                    setAcademicYearStart(Number(event.target.value));
+                  }}
+                >
+                  {settings.validAcademicYearStarts.map((year) => (
+                    <option key={year} value={year}>
+                      {formatAcademicYear(year)}
+                    </option>
+                  ))}
                 </select>
               </span>
-              <span
-                className="field__hint field__hint--spacer"
-                aria-hidden="true"
-              >
-                Reserved helper text spacing.
+              <span className="field__hint">
+                Only valid school years up to the current year are allowed.
               </span>
             </label>
           </div>
 
           <div className="settings-actions">
-            <button className="button button--primary" type="button">
+            <span className="field__hint">{profileMessage || " "}</span>
+            <button
+              className="button button--primary"
+              type="button"
+              onClick={() => void saveProfile()}
+            >
               Save Changes
             </button>
           </div>
@@ -93,28 +214,46 @@ export function SettingsPage() {
                 <div className="field__hint">Smart attendance trends.</div>
               </div>
               <button
-                className={`toggle${isAiInsightsEnabled ? " toggle--on" : ""}`}
+                className={`toggle${aiInsightsEnabled ? " toggle--on" : ""}`}
                 type="button"
                 aria-label="Toggle AI Insights"
-                aria-pressed={isAiInsightsEnabled}
-                onClick={() => setIsAiInsightsEnabled((current) => !current)}
+                aria-pressed={aiInsightsEnabled}
+                onClick={() => {
+                  setPreferencesMessage("");
+                  setAiInsightsEnabled((current) => !current);
+                }}
               />
             </div>
 
             <label className="field">
               <span className="field__label">Default Landing Page</span>
               <span className="select-wrap">
-                <select defaultValue="Dashboard Overview">
-                  <option>Dashboard Overview</option>
-                  <option>Students</option>
-                  <option>Reports</option>
+                <select
+                  value={defaultLandingPage}
+                  onChange={(event) => {
+                    setPreferencesMessage("");
+                    setDefaultLandingPage(
+                      event.target.value as AppSettings["defaultLandingPage"],
+                    );
+                  }}
+                >
+                  {landingPageOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </span>
             </label>
           </div>
 
           <div className="settings-actions settings-actions--compact">
-            <button className="button button--primary" type="button">
+            <span className="field__hint">{preferencesMessage || " "}</span>
+            <button
+              className="button button--primary"
+              type="button"
+              onClick={() => void savePreferences()}
+            >
               Save
             </button>
           </div>
@@ -138,29 +277,23 @@ export function SettingsPage() {
 
         <div className="settings-form settings-form--policy">
           <label className="field">
-            <span className="field__label">Daily Start Time</span>
-            <span className="field__input">
-              <ClockIcon className="field__icon" />
-              <input
-                className="font-data"
-                type="text"
-                defaultValue="08:00 AM"
-              />
-              <ClockIcon className="field__icon" />
-            </span>
-            <span className="field__hint">
-              Classes starting after this time are marked late.
-            </span>
-          </label>
-
-          <label className="field">
             <span className="field__label">Late Threshold</span>
             <span className="field__input field__input--split">
-              <input className="font-data" type="text" defaultValue="15" />
+              <input
+                className="font-data"
+                type="number"
+                min={1}
+                max={180}
+                value={lateThresholdMinutes}
+                onChange={(event) => {
+                  setPolicyMessage("");
+                  setLateThresholdMinutes(Number(event.target.value));
+                }}
+              />
               <span className="field__suffix">min</span>
             </span>
             <span className="field__hint">
-              Buffer time before marked absent.
+              Minutes allowed before a student is counted late.
             </span>
           </label>
         </div>
@@ -168,7 +301,12 @@ export function SettingsPage() {
         <div className="settings-divider" />
 
         <div className="settings-actions">
-          <button className="button button--primary" type="button">
+          <span className="field__hint">{policyMessage || " "}</span>
+          <button
+            className="button button--primary"
+            type="button"
+            onClick={() => void savePolicy()}
+          >
             Save Rules
           </button>
         </div>
