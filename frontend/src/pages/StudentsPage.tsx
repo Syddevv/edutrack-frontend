@@ -54,6 +54,7 @@ export function StudentsPage() {
   const [selectedCourseId, setSelectedCourseId] = useState<number>(0);
   const [selectedYearLevelId, setSelectedYearLevelId] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedSectionId, setSelectedSectionId] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddSubmitting, setIsAddSubmitting] = useState(false);
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
@@ -103,14 +104,28 @@ export function StudentsPage() {
       const matchesYear =
         selectedYearLevelId === 0 ||
         student.yearLevel.id === selectedYearLevelId;
+      const matchesSection =
+        selectedSectionId === 0 || student.section.id === selectedSectionId;
 
-      return matchesSearch && matchesCourse && matchesYear;
+      return matchesSearch && matchesCourse && matchesYear && matchesSection;
     });
-  }, [searchTerm, selectedCourseId, selectedYearLevelId, students]);
+  }, [
+    searchTerm,
+    selectedCourseId,
+    selectedYearLevelId,
+    selectedSectionId,
+    students,
+  ]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedCourseId, selectedYearLevelId, students.length]);
+  }, [
+    searchTerm,
+    selectedCourseId,
+    selectedYearLevelId,
+    selectedSectionId,
+    students.length,
+  ]);
 
   const totalPages = Math.max(
     1,
@@ -257,6 +272,20 @@ export function StudentsPage() {
                 {lookups.yearLevels.map((yearLevel) => (
                   <option key={yearLevel.id} value={yearLevel.id}>
                     {yearLevel.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                className="select-like students-select"
+                value={selectedSectionId}
+                onChange={(event) =>
+                  setSelectedSectionId(Number(event.target.value))
+                }
+              >
+                <option value={0}>All Sections</option>
+                {lookups.sections.map((section) => (
+                  <option key={section.id} value={section.id}>
+                    {section.name}
                   </option>
                 ))}
               </select>
