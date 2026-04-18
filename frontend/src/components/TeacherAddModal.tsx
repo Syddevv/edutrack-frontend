@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TeacherAssignedClassesEditor, type TeacherAssignedClass } from "./TeacherAssignedClassesEditor";
+import type { CreateTeacherInput, TeacherLookupData, TeacherStatus } from "../teachers";
 import {
   ActivityIcon,
   CheckCircleIcon,
@@ -11,37 +12,132 @@ import {
 
 type TeacherAddModalProps = {
   isOpen: boolean;
+  isSubmitting?: boolean;
+  lookups: TeacherLookupData;
   onClose: () => void;
+  onSubmit: (input: CreateTeacherInput) => Promise<void>;
 };
 
-const defaultDraft: TeacherAssignedClass = {
-  subject: "",
-  course: "BSIS",
-  year: "1st Year",
-  section: "A",
-  startTime: "08:00 AM",
-  endTime: "09:30 AM",
+const fallbackLookups: TeacherLookupData = {
+  subjects: [],
+  courses: [],
+  yearLevels: [],
+  sections: [],
+  statuses: ["Active", "On Leave", "Inactive"],
 };
 
-export function TeacherAddModal({ isOpen, onClose }: TeacherAddModalProps) {
+function createDefaultDraft(lookups: TeacherLookupData): TeacherAssignedClass {
+  return {
+    subject: lookups.subjects[0]?.name ?? "",
+    courseId: lookups.courses[0]?.id ?? 0,
+    yearLevelId: lookups.yearLevels[0]?.id ?? 0,
+    sectionId: lookups.sections[0]?.id ?? 0,
+    startTime: "08:00",
+    endTime: "09:30",
+  };
+}
+
+export function TeacherAddModal({
+  isOpen,
+  isSubmitting = false,
+  lookups,
+  onClose,
+  onSubmit,
+}: TeacherAddModalProps) {
+  const resolvedLookups = useMemo(
+    () => ({
+      subjects: lookups.subjects,
+      courses: lookups.courses,
+      yearLevels: lookups.yearLevels,
+      sections: lookups.sections,
+      statuses: lookups.statuses.length > 0 ? lookups.statuses : fallbackLookups.statuses,
+    }),
+    [lookups],
+  );
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("password");
+  const [status, setStatus] = useState<TeacherStatus>("Active");
   const [assignedClasses, setAssignedClasses] = useState<TeacherAssignedClass[]>([]);
-  const [draft, setDraft] = useState<TeacherAssignedClass>(defaultDraft);
+  const [draft, setDraft] = useState<TeacherAssignedClass>(createDefaultDraft(resolvedLookups));
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const nextDraft = createDefaultDraft(resolvedLookups);
+    setFullName("");
+    setEmail("");
+    setPassword("password");
+    setStatus("Active");
+    setAssignedClasses([]);
+    setDraft(nextDraft);
+    setError("");
+  }, [isOpen, resolvedLookups]);
 
   if (!isOpen) {
     return null;
   }
 
-  function updateDraft(field: keyof TeacherAssignedClass, value: string) {
+  function updateDraft(field: keyof TeacherAssignedClass, value: string | number) {
     setDraft((current) => ({ ...current, [field]: value }));
   }
 
   function handleAddClass() {
-    if (!draft.subject.trim()) {
+    const subject = draft.subject.trim();
+
+    if (subject === "") {
+      setError("Subject is required before adding an assigned class.");
       return;
     }
 
-    setAssignedClasses((current) => [...current, { ...draft, subject: draft.subject.trim() }]);
-    setDraft((current) => ({ ...current, subject: "" }));
+    if (!draft.courseId || !draft.yearLevelId || !draft.sectionId) {
+      setError("Course, year level, and section lookups must be loaded first.");
+      return;
+    }
+
+    if (draft.startTime >= draft.endTime) {
+      setError("Class end time must be later than the start time.");
+      return;
+    }
+
+    setAssignedClasses((current) => [...current, { ...draft, subject }]);
+    setDraft((current) => ({
+      ...current,
+      subject: resolvedLookups.subjects[0]?.name ?? "",
+    }));
+    setError("");
+  }
+
+  async function handleSubmit() {
+    const trimmedName = fullName.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+
+    if (trimmedName === "" || trimmedEmail === "" || password.trim() === "") {
+      setError("Full name, email address, and password are required.");
+      return;
+    }
+
+    if (assignedClasses.length === 0) {
+      setError("Add at least one assigned class and schedule.");
+      return;
+    }
+
+    setError("");
+
+    try {
+      await onSubmit({
+        fullName: trimmedName,
+        email: trimmedEmail,
+        password,
+        status,
+        assignedClasses,
+      });
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Failed to save teacher.");
+    }
   }
 
   return (
@@ -83,6 +179,8 @@ export function TeacherAddModal({ isOpen, onClose }: TeacherAddModalProps) {
                 className="teacher-modal__input"
                 type="text"
                 placeholder="e.g. Jane Doe"
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
               />
             </span>
           </label>
@@ -98,6 +196,8 @@ export function TeacherAddModal({ isOpen, onClose }: TeacherAddModalProps) {
                   className="teacher-modal__input"
                   type="email"
                   placeholder="jane@school.edu"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
                 />
               </span>
             </label>
@@ -111,7 +211,8 @@ export function TeacherAddModal({ isOpen, onClose }: TeacherAddModalProps) {
                 <input
                   className="teacher-modal__input"
                   type="password"
-                  defaultValue="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
                 />
               </span>
             </label>
@@ -120,6 +221,8 @@ export function TeacherAddModal({ isOpen, onClose }: TeacherAddModalProps) {
           <TeacherAssignedClassesEditor
             assignedClasses={assignedClasses}
             draft={draft}
+            helperText="Add one or more"
+            lookups={resolvedLookups}
             onAddClass={handleAddClass}
             onDraftChange={updateDraft}
             onRemoveClass={(index) =>
@@ -131,13 +234,21 @@ export function TeacherAddModal({ isOpen, onClose }: TeacherAddModalProps) {
             <span className="student-modal__label">Status</span>
             <span className="teacher-modal__input-wrap teacher-modal__input-wrap--select">
               <ActivityIcon className="teacher-modal__input-icon" />
-              <select className="teacher-modal__select" defaultValue="Active">
-                <option>Active</option>
-                <option>On Leave</option>
-                <option>Inactive</option>
+              <select
+                className="teacher-modal__select"
+                value={status}
+                onChange={(event) => setStatus(event.target.value as TeacherStatus)}
+              >
+                {resolvedLookups.statuses.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
               </select>
             </span>
           </label>
+
+          {error ? <p className="login-card__error">{error}</p> : null}
         </div>
 
         <div className="teacher-modal__footer">
@@ -145,15 +256,18 @@ export function TeacherAddModal({ isOpen, onClose }: TeacherAddModalProps) {
             className="button button--secondary teacher-modal__footer-button"
             type="button"
             onClick={onClose}
+            disabled={isSubmitting}
           >
             Cancel
           </button>
           <button
             className="button button--primary teacher-modal__footer-button teacher-modal__footer-button--primary"
             type="button"
+            onClick={() => void handleSubmit()}
+            disabled={isSubmitting}
           >
             <CheckCircleIcon className="student-modal__button-icon" />
-            Save Teacher
+            {isSubmitting ? "Saving..." : "Save Teacher"}
           </button>
         </div>
       </div>

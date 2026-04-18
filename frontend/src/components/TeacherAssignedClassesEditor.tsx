@@ -6,27 +6,43 @@ import {
   SectionIcon,
   YearLevelIcon,
 } from "./Icons";
+import type { TeacherAssignedClassPayload, TeacherLookupData } from "../teachers";
 
-export type TeacherAssignedClass = {
-  subject: string;
-  course: string;
-  year: string;
-  section: string;
-  startTime: string;
-  endTime: string;
-};
+export type TeacherAssignedClass = TeacherAssignedClassPayload;
 
 type TeacherAssignedClassesEditorProps = {
   assignedClasses: TeacherAssignedClass[];
   draft: TeacherAssignedClass;
   helperText?: string;
+  lookups: TeacherLookupData;
   onAddClass: () => void;
-  onDraftChange: (field: keyof TeacherAssignedClass, value: string) => void;
+  onDraftChange: (field: keyof TeacherAssignedClass, value: string | number) => void;
   onRemoveClass: (index: number) => void;
 };
 
-function formatAssignedClass(item: TeacherAssignedClass) {
-  return `${item.subject} • ${item.course} ${item.year}-${item.section}`;
+function findOptionLabel(options: TeacherLookupData["courses"], optionId: number) {
+  return options.find((option) => option.id === optionId)?.code
+    ?? options.find((option) => option.id === optionId)?.name
+    ?? "Unknown";
+}
+
+function findSubjectLabel(subjects: TeacherLookupData["subjects"], subjectName: string) {
+  const subject = subjects.find((item) => item.name === subjectName);
+
+  if (!subject) {
+    return subjectName || "Unknown";
+  }
+
+  return subject.code ? `${subject.code} - ${subject.name}` : subject.name;
+}
+
+function formatAssignedClass(item: TeacherAssignedClass, lookups: TeacherLookupData) {
+  const subject = findSubjectLabel(lookups.subjects, item.subject);
+  const course = findOptionLabel(lookups.courses, item.courseId);
+  const yearLevel = findOptionLabel(lookups.yearLevels, item.yearLevelId);
+  const section = findOptionLabel(lookups.sections, item.sectionId);
+
+  return `${subject} • ${course} ${yearLevel}-${section}`;
 }
 
 function formatTimeRange(item: TeacherAssignedClass) {
@@ -37,6 +53,7 @@ export function TeacherAssignedClassesEditor({
   assignedClasses,
   draft,
   helperText = "Add one or more",
+  lookups,
   onAddClass,
   onDraftChange,
   onRemoveClass,
@@ -51,13 +68,20 @@ export function TeacherAssignedClassesEditor({
       <div className="teacher-assignment">
         <span className="teacher-modal__input-wrap teacher-modal__input-wrap--full">
           <CourseIcon className="teacher-modal__input-icon" />
-          <input
-            className="teacher-modal__input"
-            type="text"
-            placeholder="Subject (e.g. Math 101, Physics 202)"
+          <select
+            className="teacher-modal__select"
             value={draft.subject}
             onChange={(event) => onDraftChange("subject", event.target.value)}
-          />
+          >
+            <option value="" disabled>
+              Select subject
+            </option>
+            {lookups.subjects.map((subject) => (
+              <option key={subject.id} value={subject.name}>
+                {subject.code ? `${subject.code} - ${subject.name}` : subject.name}
+              </option>
+            ))}
+          </select>
         </span>
 
         <div className="teacher-assignment__grid teacher-assignment__grid--three">
@@ -65,14 +89,14 @@ export function TeacherAssignedClassesEditor({
             <CourseIcon className="teacher-modal__input-icon" />
             <select
               className="teacher-modal__select"
-              value={draft.course}
-              onChange={(event) => onDraftChange("course", event.target.value)}
+              value={draft.courseId}
+              onChange={(event) => onDraftChange("courseId", Number(event.target.value))}
             >
-              <option>BSIS</option>
-              <option>BSOM</option>
-              <option>BSCA</option>
-              <option>BSAIS</option>
-              <option>ACT</option>
+              {lookups.courses.map((course) => (
+                <option key={course.id} value={course.id}>
+                  {course.code ?? course.name}
+                </option>
+              ))}
             </select>
           </span>
 
@@ -80,13 +104,14 @@ export function TeacherAssignedClassesEditor({
             <YearLevelIcon className="teacher-modal__input-icon" />
             <select
               className="teacher-modal__select"
-              value={draft.year}
-              onChange={(event) => onDraftChange("year", event.target.value)}
+              value={draft.yearLevelId}
+              onChange={(event) => onDraftChange("yearLevelId", Number(event.target.value))}
             >
-              <option>1st Year</option>
-              <option>2nd Year</option>
-              <option>3rd Year</option>
-              <option>4th Year</option>
+              {lookups.yearLevels.map((yearLevel) => (
+                <option key={yearLevel.id} value={yearLevel.id}>
+                  {yearLevel.name}
+                </option>
+              ))}
             </select>
           </span>
 
@@ -94,12 +119,14 @@ export function TeacherAssignedClassesEditor({
             <SectionIcon className="teacher-modal__input-icon" />
             <select
               className="teacher-modal__select"
-              value={draft.section}
-              onChange={(event) => onDraftChange("section", event.target.value)}
+              value={draft.sectionId}
+              onChange={(event) => onDraftChange("sectionId", Number(event.target.value))}
             >
-              <option>A</option>
-              <option>B</option>
-              <option>C</option>
+              {lookups.sections.map((section) => (
+                <option key={section.id} value={section.id}>
+                  {section.name}
+                </option>
+              ))}
             </select>
           </span>
         </div>
@@ -109,7 +136,7 @@ export function TeacherAssignedClassesEditor({
             <ClockIcon className="teacher-modal__input-icon" />
             <input
               className="teacher-modal__input"
-              type="text"
+              type="time"
               value={draft.startTime}
               onChange={(event) => onDraftChange("startTime", event.target.value)}
             />
@@ -119,7 +146,7 @@ export function TeacherAssignedClassesEditor({
             <ClockIcon className="teacher-modal__input-icon" />
             <input
               className="teacher-modal__input"
-              type="text"
+              type="time"
               value={draft.endTime}
               onChange={(event) => onDraftChange("endTime", event.target.value)}
             />
@@ -139,12 +166,12 @@ export function TeacherAssignedClassesEditor({
           <div className="teacher-assignment__chips">
             {assignedClasses.map((item, index) => (
               <button
-                key={`${item.subject}-${item.course}-${item.year}-${item.section}-${item.startTime}-${item.endTime}-${index}`}
+                key={`${item.subject}-${item.courseId}-${item.yearLevelId}-${item.sectionId}-${item.startTime}-${item.endTime}-${index}`}
                 className="teacher-assignment__chip"
                 type="button"
                 onClick={() => onRemoveClass(index)}
               >
-                <span>{formatAssignedClass(item)}</span>
+                <span>{formatAssignedClass(item, lookups)}</span>
                 <span className="teacher-assignment__chip-time">
                   <ClockIcon className="teacher-assignment__chip-time-icon" />
                   {formatTimeRange(item)}

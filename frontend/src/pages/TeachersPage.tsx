@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TeacherAddModal } from "../components/TeacherAddModal";
-import { EditTeacherModal, type EditTeacherData } from "../components/EditTeacherModal";
+import { EditTeacherModal } from "../components/EditTeacherModal";
 import { ConfirmationDialog } from "../components/ConfirmationDialog";
 import {
   FilterIcon,
@@ -9,51 +9,219 @@ import {
   SearchIcon,
   TrashIcon,
 } from "../components/Icons";
+import {
+  createTeacher,
+  deleteTeacher,
+  getTeachers,
+  type TeacherLookupData,
+  type TeacherRecord,
+  type TeacherSummary,
+  updateTeacher,
+} from "../teachers";
 
-type SummaryCard = {
-  title: string;
-  value: string;
-  hint: string;
-  tone?: "success";
+const emptySummary: TeacherSummary = {
+  total: 0,
+  active: 0,
+  onLeave: 0,
+  inactive: 0,
 };
 
-type TeacherRow = readonly [string, string, string, string, string];
+const emptyLookups: TeacherLookupData = {
+  subjects: [],
+  courses: [],
+  yearLevels: [],
+  sections: [],
+  statuses: ["Active", "On Leave", "Inactive"],
+};
 
-const summaryCards = [
-  {
-    title: "Total Teachers",
-    value: "42",
-    hint: "+2 this month",
-    tone: "success",
-  },
-  { title: "Active Now", value: "38", hint: "Currently on campus" },
-  { title: "On Leave", value: "4", hint: "Requires substitute" },
-] satisfies SummaryCard[];
+function getInitials(fullName: string) {
+  return fullName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((name) => name[0])
+    .join("");
+}
 
-const initialTeachers: ReadonlyArray<TeacherRow> = [
-  ["Jane Doe", "TCH-001", "jane@school.edu", "BSIS - 1st Year - A", "Active"],
-  [
-    "John Williams",
-    "TCH-002",
-    "john@school.edu",
-    "BSOM - 2nd Year - B",
-    "Active",
-  ],
-  [
-    "Sarah Connor",
-    "TCH-003",
-    "sarah@school.edu",
-    "BSAIS - 3rd Year - A",
-    "On Leave",
-  ],
-  ["Mike Ross", "TCH-004", "mike@school.edu", "ACT - 2nd Year - A", "Active"],
-] as const;
+function formatTime(time: string) {
+  const [hourText = "0", minute = "00"] = time.split(":");
+  const hour = Number(hourText);
+
+  if (Number.isNaN(hour)) {
+    return time;
+  }
+
+  const period = hour >= 12 ? "PM" : "AM";
+  const normalizedHour = hour % 12 || 12;
+
+  return `${normalizedHour}:${minute} ${period}`;
+}
+
+function formatAssignedClassItem(teacher: TeacherRecord, assignmentIndex: number) {
+  const item = teacher.assignedClasses[assignmentIndex];
+
+  if (!item) {
+    return "No class assigned";
+  }
+
+  return `${item.subject} • ${item.course.code ?? item.course.name} ${item.yearLevel.name}-${item.section.name} • ${formatTime(item.startTime)}-${formatTime(item.endTime)}`;
+}
+
+function formatSummaryCards(summary: TeacherSummary) {
+  return [
+    {
+      title: "Total Teachers",
+      value: String(summary.total),
+      hint: `${summary.total} records in the directory`,
+      tone: "success" as const,
+    },
+    {
+      title: "Active Now",
+      value: String(summary.active),
+      hint: "Available for active teaching loads",
+    },
+    {
+      title: "On Leave",
+      value: String(summary.onLeave),
+      hint: `${summary.inactive} inactive account${summary.inactive === 1 ? "" : "s"}`,
+    },
+  ];
+}
 
 export function TeachersPage() {
-  const [teachers, setTeachers] = useState(initialTeachers);
+  const [teachers, setTeachers] = useState<TeacherRecord[]>([]);
+  const [summary, setSummary] = useState<TeacherSummary>(emptySummary);
+  const [lookups, setLookups] = useState<TeacherLookupData>(emptyLookups);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAddSubmitting, setIsAddSubmitting] = useState(false);
+  const [isEditSubmitting, setIsEditSubmitting] = useState(false);
+  const [pageError, setPageError] = useState("");
   const [isAddTeacherOpen, setIsAddTeacherOpen] = useState(false);
-  const [teacherToDelete, setTeacherToDelete] = useState<TeacherRow | null>(null);
-  const [teacherToEdit, setTeacherToEdit] = useState<EditTeacherData | null>(null);
+  const [teacherToDelete, setTeacherToDelete] = useState<TeacherRecord | null>(
+    null,
+  );
+  const [teacherToEdit, setTeacherToEdit] = useState<TeacherRecord | null>(null);
+
+  useEffect(() => {
+    void loadTeachers();
+  }, []);
+
+  async function loadTeachers() {
+    setIsLoading(true);
+    setPageError("");
+
+    try {
+      const response = await getTeachers();
+      setTeachers(response.teachers);
+      setSummary(response.summary);
+      setLookups(response.lookups);
+    } catch (error) {
+      setPageError(
+        error instanceof Error ? error.message : "Failed to load teachers.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  const filteredTeachers = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+
+    if (query === "") {
+      return teachers;
+    }
+
+    return teachers.filter((teacher) => {
+      const assignments = teacher.assignedClasses
+        .map(
+          (item) =>
+            `${item.subject} ${item.course.code ?? item.course.name} ${item.yearLevel.name} ${item.section.name}`,
+        )
+        .join(" ")
+        .toLowerCase();
+
+      return [
+        teacher.fullName,
+        teacher.email,
+        teacher.teacherId,
+        teacher.status,
+        assignments,
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(query);
+    });
+  }, [searchTerm, teachers]);
+
+  const summaryCards = useMemo(() => formatSummaryCards(summary), [summary]);
+
+  async function handleCreateTeacher(
+    input: Parameters<typeof createTeacher>[0],
+  ) {
+    setIsAddSubmitting(true);
+
+    try {
+      const teacher = await createTeacher(input);
+      setTeachers((current) => [teacher, ...current]);
+      await loadTeachers();
+      setIsAddTeacherOpen(false);
+    } finally {
+      setIsAddSubmitting(false);
+    }
+  }
+
+  async function handleEditTeacher(input: Parameters<typeof updateTeacher>[0]) {
+    setIsEditSubmitting(true);
+
+    try {
+      const updatedTeacher = await updateTeacher(input);
+      setTeachers((current) =>
+        current.map((teacher) =>
+          teacher.id === updatedTeacher.id ? updatedTeacher : teacher,
+        ),
+      );
+      await loadTeachers();
+      setTeacherToEdit(null);
+    } finally {
+      setIsEditSubmitting(false);
+    }
+  }
+
+  async function handleDeleteTeacher() {
+    if (!teacherToDelete) {
+      return;
+    }
+
+    const currentTeacher = teacherToDelete;
+
+    try {
+      await deleteTeacher(currentTeacher.id);
+      setTeachers((current) =>
+        current.filter((teacher) => teacher.id !== currentTeacher.id),
+      );
+      setSummary((current) => ({
+        total: Math.max(0, current.total - 1),
+        active: Math.max(
+          0,
+          current.active - (currentTeacher.status === "Active" ? 1 : 0),
+        ),
+        onLeave: Math.max(
+          0,
+          current.onLeave - (currentTeacher.status === "On Leave" ? 1 : 0),
+        ),
+        inactive: Math.max(
+          0,
+          current.inactive - (currentTeacher.status === "Inactive" ? 1 : 0),
+        ),
+      }));
+      setTeacherToDelete(null);
+    } catch (error) {
+      setPageError(
+        error instanceof Error ? error.message : "Failed to delete teacher.",
+      );
+    }
+  }
 
   return (
     <section className="page">
@@ -94,7 +262,12 @@ export function TeachersPage() {
         <div className="toolbar toolbar--tight">
           <label className="search-field search-field--medium">
             <SearchIcon className="search-field__icon" />
-            <input type="text" placeholder="Search by name, email, or ID" />
+            <input
+              type="text"
+              placeholder="Search by name, email, subject, or ID"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+            />
           </label>
 
           <button className="icon-button" type="button" aria-label="Filter">
@@ -102,106 +275,127 @@ export function TeachersPage() {
           </button>
         </div>
 
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Assigned Class</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {teachers.map((teacher) => (
-              <tr key={teacher[1]}>
-                <td>
-                  <div className="person">
-                    <div className="avatar avatar--photo">
-                      {teacher[0]
-                        .split(" ")
-                        .map((name) => name[0])
-                        .join("")}
-                    </div>
-                    <div>
-                      <div className="person__name">{teacher[0]}</div>
-                      <div className="person__meta font-data">ID: {teacher[1]}</div>
-                    </div>
-                  </div>
-                </td>
-                <td>{teacher[2]}</td>
-                <td>
-                  <span className="soft-badge soft-badge--wide">{teacher[3]}</span>
-                </td>
-                <td>
-                  <span
-                    className={`status-dot status-dot--${teacher[4].toLowerCase().replace(" ", "-")}`}
-                  >
-                    {teacher[4]}
-                  </span>
-                </td>
-                <td>
-                  <div className="table-actions">
-                    <button
-                      className="icon-button icon-button--ghost"
-                      type="button"
-                      aria-label="Edit"
-                      onClick={() =>
-                        setTeacherToEdit({
-                          assignedClass: teacher[3],
-                          email: teacher[2],
-                          id: teacher[1],
-                          name: teacher[0],
-                          status: teacher[4],
-                        })
-                      }
-                    >
-                      <PencilIcon className="table-action-icon" />
-                    </button>
-                    <button
-                      className="icon-button icon-button--ghost"
-                      type="button"
-                      aria-label="Delete"
-                      onClick={() => setTeacherToDelete(teacher)}
-                    >
-                      <TrashIcon className="table-action-icon" />
-                    </button>
-                  </div>
-                </td>
+        {pageError ? <p className="login-card__error">{pageError}</p> : null}
+
+        {isLoading ? (
+          <p className="page-subtitle">Loading teachers...</p>
+        ) : filteredTeachers.length === 0 ? (
+          <p className="page-subtitle">No teachers found.</p>
+        ) : (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Assigned Classes</th>
+                <th>Status</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredTeachers.map((teacher) => (
+                <tr key={teacher.id}>
+                  <td>
+                    <div className="person">
+                      <div className="avatar avatar--photo">
+                        {getInitials(teacher.fullName)}
+                      </div>
+                      <div>
+                        <div className="person__name">{teacher.fullName}</div>
+                        <div className="person__meta font-data">
+                          ID: {teacher.teacherId}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>{teacher.email}</td>
+                  <td>
+                    {teacher.assignedClasses.length > 0 ? (
+                      <details className="teacher-class-dropdown">
+                        <summary className="teacher-class-dropdown__summary">
+                          <span className="soft-badge soft-badge--wide teacher-class-dropdown__trigger">
+                            {teacher.assignedClasses.length} assigned class
+                            {teacher.assignedClasses.length === 1 ? "" : "es"}
+                          </span>
+                        </summary>
+                        <div className="teacher-class-dropdown__menu">
+                          {teacher.assignedClasses.map((item, index) => (
+                            <span
+                              className="soft-badge soft-badge--wide teacher-class-dropdown__item"
+                              key={`${teacher.id}-${item.id}`}
+                            >
+                              {formatAssignedClassItem(teacher, index)}
+                            </span>
+                          ))}
+                        </div>
+                      </details>
+                    ) : (
+                      <span className="soft-badge soft-badge--wide">
+                        No class assigned
+                      </span>
+                    )}
+                  </td>
+                  <td>
+                    <span
+                      className={`status-dot status-dot--${teacher.status.toLowerCase().replace(" ", "-")}`}
+                    >
+                      {teacher.status}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="table-actions">
+                      <button
+                        className="icon-button icon-button--ghost"
+                        type="button"
+                        aria-label="Edit"
+                        onClick={() => setTeacherToEdit(teacher)}
+                      >
+                        <PencilIcon className="table-action-icon" />
+                      </button>
+                      <button
+                        className="icon-button icon-button--ghost"
+                        type="button"
+                        aria-label="Delete"
+                        onClick={() => setTeacherToDelete(teacher)}
+                      >
+                        <TrashIcon className="table-action-icon" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </section>
 
       <TeacherAddModal
         isOpen={isAddTeacherOpen}
+        isSubmitting={isAddSubmitting}
+        lookups={lookups}
         onClose={() => setIsAddTeacherOpen(false)}
+        onSubmit={handleCreateTeacher}
       />
       <EditTeacherModal
         isOpen={teacherToEdit !== null}
+        isSubmitting={isEditSubmitting}
+        lookups={lookups}
         teacher={teacherToEdit}
         onClose={() => setTeacherToEdit(null)}
+        onSubmit={handleEditTeacher}
       />
       <ConfirmationDialog
         isOpen={teacherToDelete !== null}
         title="Delete Teacher"
         message={
           teacherToDelete
-            ? `Are you sure you want to delete ${teacherToDelete[0]}?`
+            ? `Are you sure you want to delete ${teacherToDelete.fullName}?`
             : ""
         }
         confirmLabel="Delete"
         tone="danger"
         onCancel={() => setTeacherToDelete(null)}
-        onConfirm={() => {
-          if (teacherToDelete) {
-            setTeachers((current) =>
-              current.filter((teacher) => teacher[1] !== teacherToDelete[1]),
-            );
-          }
-          setTeacherToDelete(null);
-        }}
+        onConfirm={() => void handleDeleteTeacher()}
       />
     </section>
   );

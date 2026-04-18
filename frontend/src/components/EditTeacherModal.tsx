@@ -3,6 +3,12 @@ import {
   TeacherAssignedClassesEditor,
   type TeacherAssignedClass,
 } from "./TeacherAssignedClassesEditor";
+import type {
+  TeacherLookupData,
+  TeacherRecord,
+  TeacherStatus,
+  UpdateTeacherInput,
+} from "../teachers";
 import {
   ActivityIcon,
   CheckCircleIcon,
@@ -11,77 +17,130 @@ import {
   UserAddIcon,
 } from "./Icons";
 
-export type EditTeacherData = {
-  assignedClass: string;
-  email: string;
-  id: string;
-  name: string;
-  status: string;
-};
-
 type EditTeacherModalProps = {
   isOpen: boolean;
+  isSubmitting?: boolean;
+  lookups: TeacherLookupData;
   onClose: () => void;
-  teacher: EditTeacherData | null;
+  onSubmit: (input: UpdateTeacherInput) => Promise<void>;
+  teacher: TeacherRecord | null;
 };
 
-const defaultDraft: TeacherAssignedClass = {
-  subject: "General",
-  course: "BSIS",
-  year: "1st Year",
-  section: "A",
-  startTime: "08:00 AM",
-  endTime: "09:30 AM",
-};
-
-function parseAssignedClass(assignedClass: string): TeacherAssignedClass {
-  const parts = assignedClass.split(" - ").map((item) => item.trim());
+function createDefaultDraft(lookups: TeacherLookupData): TeacherAssignedClass {
   return {
-    subject: "General",
-    course: parts[0] ?? defaultDraft.course,
-    year: parts[1] ?? defaultDraft.year,
-    section: parts[2] ?? defaultDraft.section,
-    startTime: defaultDraft.startTime,
-    endTime: defaultDraft.endTime,
+    subject: lookups.subjects[0]?.name ?? "",
+    courseId: lookups.courses[0]?.id ?? 0,
+    yearLevelId: lookups.yearLevels[0]?.id ?? 0,
+    sectionId: lookups.sections[0]?.id ?? 0,
+    startTime: "08:00",
+    endTime: "09:30",
   };
 }
 
 export function EditTeacherModal({
   isOpen,
+  isSubmitting = false,
+  lookups,
   onClose,
+  onSubmit,
   teacher,
 }: EditTeacherModalProps) {
-  const [assignedClasses, setAssignedClasses] = useState<
-    TeacherAssignedClass[]
-  >([]);
-  const [draft, setDraft] = useState<TeacherAssignedClass>(defaultDraft);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<TeacherStatus>("Active");
+  const [assignedClasses, setAssignedClasses] = useState<TeacherAssignedClass[]>([]);
+  const [draft, setDraft] = useState<TeacherAssignedClass>(createDefaultDraft(lookups));
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    if (teacher && isOpen) {
-      const parsed = parseAssignedClass(teacher.assignedClass);
-      setDraft(parsed);
-      setAssignedClasses([parsed]);
+    if (!teacher || !isOpen) {
+      return;
     }
-  }, [isOpen, teacher]);
+
+    setFullName(teacher.fullName);
+    setEmail(teacher.email);
+    setStatus(teacher.status);
+    setAssignedClasses(
+      teacher.assignedClasses.map((item) => ({
+        subject: item.subject,
+        courseId: item.course.id,
+        yearLevelId: item.yearLevel.id,
+        sectionId: item.section.id,
+        startTime: item.startTime,
+        endTime: item.endTime,
+      })),
+    );
+    setDraft(createDefaultDraft(lookups));
+    setError("");
+  }, [isOpen, lookups, teacher]);
 
   if (!isOpen || !teacher) {
     return null;
   }
 
-  function updateDraft(field: keyof TeacherAssignedClass, value: string) {
+  const currentTeacher = teacher;
+
+  function updateDraft(field: keyof TeacherAssignedClass, value: string | number) {
     setDraft((current) => ({ ...current, [field]: value }));
   }
 
   function handleAddClass() {
-    if (!draft.subject.trim()) {
+    const subject = draft.subject.trim();
+
+    if (subject === "") {
+      setError("Subject is required before adding an assigned class.");
       return;
     }
 
-    setAssignedClasses((current) => [
+    if (!draft.courseId || !draft.yearLevelId || !draft.sectionId) {
+      setError("Course, year level, and section lookups must be loaded first.");
+      return;
+    }
+
+    if (draft.startTime >= draft.endTime) {
+      setError("Class end time must be later than the start time.");
+      return;
+    }
+
+    setAssignedClasses((current) => [...current, { ...draft, subject }]);
+    setDraft((current) => ({
       ...current,
-      { ...draft, subject: draft.subject.trim() },
-    ]);
-    setDraft((current) => ({ ...current, subject: "" }));
+      subject: lookups.subjects[0]?.name ?? "",
+    }));
+    setError("");
+  }
+
+  async function handleSubmit() {
+    const trimmedName = fullName.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+
+    if (trimmedName === "" || trimmedEmail === "") {
+      setError("Full name and email address are required.");
+      return;
+    }
+
+    if (assignedClasses.length === 0) {
+      setError("Add at least one assigned class and schedule.");
+      return;
+    }
+
+    setError("");
+
+    try {
+      await onSubmit({
+        teacherId: currentTeacher.id,
+        fullName: trimmedName,
+        email: trimmedEmail,
+        status,
+        assignedClasses,
+      });
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Failed to update teacher.",
+      );
+    }
   }
 
   return (
@@ -100,8 +159,10 @@ export function EditTeacherModal({
         <div className="edit-teacher-modal__header">
           <div className="edit-teacher-modal__identity">
             <div className="avatar avatar--photo edit-teacher-modal__avatar">
-              {teacher.name
+              {currentTeacher.fullName
                 .split(" ")
+                .filter(Boolean)
+                .slice(0, 2)
                 .map((name) => name[0])
                 .join("")}
             </div>
@@ -109,7 +170,7 @@ export function EditTeacherModal({
               <h2 className="student-modal__title" id="edit-teacher-title">
                 Edit Teacher
               </h2>
-              <div className="edit-teacher-modal__id">ID: {teacher.id}</div>
+              <div className="edit-teacher-modal__id">ID: {currentTeacher.teacherId}</div>
             </div>
           </div>
 
@@ -133,7 +194,8 @@ export function EditTeacherModal({
               <input
                 className="teacher-modal__input"
                 type="text"
-                defaultValue={teacher.name}
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
               />
             </span>
           </label>
@@ -147,7 +209,8 @@ export function EditTeacherModal({
               <input
                 className="teacher-modal__input"
                 type="email"
-                defaultValue={teacher.email}
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
               />
             </span>
           </label>
@@ -155,6 +218,7 @@ export function EditTeacherModal({
           <TeacherAssignedClassesEditor
             assignedClasses={assignedClasses}
             draft={draft}
+            lookups={lookups}
             onAddClass={handleAddClass}
             onDraftChange={updateDraft}
             onRemoveClass={(index) =>
@@ -170,14 +234,21 @@ export function EditTeacherModal({
               <ActivityIcon className="teacher-modal__input-icon" />
               <select
                 className="teacher-modal__select"
-                defaultValue={teacher.status}
+                value={status}
+                onChange={(event) =>
+                  setStatus(event.target.value as TeacherStatus)
+                }
               >
-                <option>Active</option>
-                <option>On Leave</option>
-                <option>Inactive</option>
+                {lookups.statuses.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
               </select>
             </span>
           </label>
+
+          {error ? <p className="login-card__error">{error}</p> : null}
         </div>
 
         <div className="teacher-modal__footer">
@@ -185,15 +256,18 @@ export function EditTeacherModal({
             className="button button--secondary teacher-modal__footer-button"
             type="button"
             onClick={onClose}
+            disabled={isSubmitting}
           >
             Cancel
           </button>
           <button
             className="button button--primary teacher-modal__footer-button teacher-modal__footer-button--primary"
             type="button"
+            onClick={() => void handleSubmit()}
+            disabled={isSubmitting}
           >
             <CheckCircleIcon className="student-modal__button-icon" />
-            Save Changes
+            {isSubmitting ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </div>
