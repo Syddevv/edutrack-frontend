@@ -1,27 +1,91 @@
+import { useEffect, useState } from "react";
 import { CloseIcon } from "./Icons";
-
-type StudentRow = readonly [
-  string,
-  string,
-  string,
-  string,
-  string,
-  string,
-  string,
-];
+import type { StudentLookupData, StudentRecord, UpdateStudentInput } from "../students";
 
 interface StudentEditModalProps {
-  studentToEdit: StudentRow | null;
+  isSubmitting?: boolean;
+  lookups: StudentLookupData;
+  studentToEdit: StudentRecord | null;
   onClose: () => void;
-  onSave: () => void;
+  onSave: (input: UpdateStudentInput) => Promise<void>;
+}
+
+function getDefaultCourseId(lookups: StudentLookupData) {
+  return lookups.courses[0]?.id ?? 0;
+}
+
+function getDefaultYearLevelId(lookups: StudentLookupData) {
+  return lookups.yearLevels[0]?.id ?? 0;
+}
+
+function getDefaultSectionId(lookups: StudentLookupData) {
+  return lookups.sections[0]?.id ?? 0;
 }
 
 export function StudentEditModal({
+  isSubmitting = false,
+  lookups,
   studentToEdit,
   onClose,
   onSave,
 }: StudentEditModalProps) {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [courseId, setCourseId] = useState(getDefaultCourseId(lookups));
+  const [yearLevelId, setYearLevelId] = useState(getDefaultYearLevelId(lookups));
+  const [sectionId, setSectionId] = useState(getDefaultSectionId(lookups));
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!studentToEdit) {
+      return;
+    }
+
+    setFirstName(studentToEdit.firstName);
+    setLastName(studentToEdit.lastName);
+    setEmail(studentToEdit.email);
+    setCourseId(studentToEdit.course.id || getDefaultCourseId(lookups));
+    setYearLevelId(studentToEdit.yearLevel.id || getDefaultYearLevelId(lookups));
+    setSectionId(studentToEdit.section.id || getDefaultSectionId(lookups));
+    setError("");
+  }, [lookups, studentToEdit]);
+
   if (!studentToEdit) return null;
+
+  const currentStudent = studentToEdit;
+
+  async function handleSubmit() {
+    const trimmedFirstName = firstName.trim();
+    const trimmedLastName = lastName.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+
+    if (trimmedFirstName === "" || trimmedLastName === "" || trimmedEmail === "") {
+      setError("First name, last name, and email are required.");
+      return;
+    }
+
+    if (!courseId || !yearLevelId || !sectionId) {
+      setError("Course, year level, and section are required.");
+      return;
+    }
+
+    setError("");
+
+    try {
+      await onSave({
+        studentId: currentStudent.id,
+        firstName: trimmedFirstName,
+        lastName: trimmedLastName,
+        email: trimmedEmail,
+        courseId,
+        yearLevelId,
+        sectionId,
+      });
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Failed to update student.");
+    }
+  }
 
   return (
     <div
@@ -55,9 +119,10 @@ export function StudentEditModal({
           <label className="student-modal__field">
             <span className="student-modal__label">First Name</span>
             <input
-              className="student-modal__input student-modal__input--focus"
+              className="student-modal__input"
               type="text"
-              defaultValue={studentToEdit?.[0].split(" ")[0] || ""}
+              value={firstName}
+              onChange={(event) => setFirstName(event.target.value)}
             />
           </label>
 
@@ -66,9 +131,8 @@ export function StudentEditModal({
             <input
               className="student-modal__input"
               type="text"
-              defaultValue={
-                studentToEdit?.[0].split(" ").slice(1).join(" ") || ""
-              }
+              value={lastName}
+              onChange={(event) => setLastName(event.target.value)}
             />
           </label>
         </div>
@@ -78,7 +142,8 @@ export function StudentEditModal({
           <input
             className="student-modal__input"
             type="email"
-            defaultValue={studentToEdit?.[1] || ""}
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
           />
         </label>
 
@@ -86,16 +151,14 @@ export function StudentEditModal({
           <span className="student-modal__label">Course</span>
           <select
             className="student-modal__select"
-            defaultValue={studentToEdit?.[3] || ""}
+            value={courseId}
+            onChange={(event) => setCourseId(Number(event.target.value))}
           >
-            <option value="" disabled>
-              Select a course
-            </option>
-            <option>BSIS</option>
-            <option>BSOM</option>
-            <option>BSCA</option>
-            <option>BSAIS</option>
-            <option>ACT</option>
+            {lookups.courses.map((course) => (
+              <option key={course.id} value={course.id}>
+                {course.code ?? course.name}
+              </option>
+            ))}
           </select>
         </label>
 
@@ -104,15 +167,14 @@ export function StudentEditModal({
             <span className="student-modal__label">Year Level</span>
             <select
               className="student-modal__select"
-              defaultValue={studentToEdit?.[4] || ""}
+              value={yearLevelId}
+              onChange={(event) => setYearLevelId(Number(event.target.value))}
             >
-              <option value="" disabled>
-                Year
-              </option>
-              <option>1st Year</option>
-              <option>2nd Year</option>
-              <option>3rd Year</option>
-              <option>4th Year</option>
+              {lookups.yearLevels.map((yearLevel) => (
+                <option key={yearLevel.id} value={yearLevel.id}>
+                  {yearLevel.name}
+                </option>
+              ))}
             </select>
           </label>
 
@@ -120,33 +182,37 @@ export function StudentEditModal({
             <span className="student-modal__label">Section</span>
             <select
               className="student-modal__select"
-              defaultValue={studentToEdit?.[5] || ""}
+              value={sectionId}
+              onChange={(event) => setSectionId(Number(event.target.value))}
             >
-              <option value="" disabled>
-                Section
-              </option>
-              <option>A</option>
-              <option>B</option>
-              <option>C</option>
+              {lookups.sections.map((section) => (
+                <option key={section.id} value={section.id}>
+                  {section.name}
+                </option>
+              ))}
             </select>
           </label>
         </div>
       </div>
+
+      {error ? <p className="login-card__error">{error}</p> : null}
 
       <div className="student-modal__actions">
         <button
           className="button button--secondary student-modal__button-light"
           type="button"
           onClick={onClose}
+          disabled={isSubmitting}
         >
           Cancel
         </button>
         <button
           className="button button--primary student-modal__button-dark"
           type="button"
-          onClick={onSave}
+          onClick={() => void handleSubmit()}
+          disabled={isSubmitting}
         >
-          Save Changes
+          {isSubmitting ? "Saving..." : "Save Changes"}
         </button>
       </div>
     </div>

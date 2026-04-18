@@ -492,10 +492,48 @@ input {
   margin-left: 0;
 }
 
+.students-page {
+  display: grid;
+  gap: 18px;
+}
+
+.students-page__header {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  background: #fff;
+  padding-bottom: 2px;
+}
+
+.students-page__table-panel {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.students-page__footer {
+  margin-top: 4px;
+  flex: 0 0 auto;
+}
+
+.students-page__table-scroll {
+  flex: 1 1 auto;
+  max-height: calc(100vh - 360px);
+  overflow: auto;
+}
+
+.students-page__table-scroll .data-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
 .students-select {
   min-height: 40px;
   min-width: 140px;
   justify-content: flex-start;
+  padding-right: 36px;
+  appearance: auto;
   border-radius: 12px;
   border: 1px solid #dfe3ea;
   background: #fff;
