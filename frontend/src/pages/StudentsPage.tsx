@@ -15,6 +15,8 @@ import {
   createStudent,
   deleteStudent,
   getStudents,
+  importStudents,
+  type ImportStudentsResult,
   type StudentLookupData,
   type StudentRecord,
   updateStudent,
@@ -50,6 +52,7 @@ export function StudentsPage() {
   const [isAddSubmitting, setIsAddSubmitting] = useState(false);
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
   const [isDeleteSubmitting, setIsDeleteSubmitting] = useState(false);
+  const [isImportSubmitting, setIsImportSubmitting] = useState(false);
   const [pageError, setPageError] = useState("");
 
   useEffect(() => {
@@ -142,6 +145,24 @@ export function StudentsPage() {
       setStudentToDelete(null);
     } finally {
       setIsDeleteSubmitting(false);
+    }
+  }
+
+  async function handleImportStudents(file: File): Promise<ImportStudentsResult> {
+    setIsImportSubmitting(true);
+
+    try {
+      const result = await importStudents(file);
+      await loadStudents();
+      setActiveModal(null);
+      setPageError(
+        result.errors.length > 0
+          ? `Imported ${result.importedCount} student(s), skipped ${result.skippedCount}. ${result.errors[0]}`
+          : "",
+      );
+      return result;
+    } finally {
+      setIsImportSubmitting(false);
     }
   }
 
@@ -371,8 +392,9 @@ export function StudentsPage() {
           )}
           {activeModal === "import" && (
             <StudentImportModal
+              isSubmitting={isImportSubmitting}
               onClose={() => setActiveModal(null)}
-              onImport={() => setActiveModal(null)}
+              onImport={handleImportStudents}
             />
           )}
         </div>

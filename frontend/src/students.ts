@@ -44,6 +44,12 @@ export type UpdateStudentInput = CreateStudentInput & {
   studentId: number;
 };
 
+export type ImportStudentsResult = {
+  importedCount: number;
+  skippedCount: number;
+  errors: string[];
+};
+
 type ApiEnvelope<T> = T & {
   message?: string;
 };
@@ -98,4 +104,25 @@ export async function deleteStudent(studentId: number): Promise<void> {
     method: "POST",
     body: JSON.stringify({ studentId }),
   });
+}
+
+export async function importStudents(file: File): Promise<ImportStudentsResult> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${STUDENTS_API_BASE}/import.php`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as ImportStudentsResult & {
+    message?: string;
+  };
+
+  if (!response.ok) {
+    throw new Error(payload.message || "Import failed.");
+  }
+
+  return payload;
 }
