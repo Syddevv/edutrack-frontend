@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell } from "./components/AppShell";
+import { getCurrentUser, login, logout, type AuthUser } from "./auth";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { ReportsPage } from "./pages/ReportsPage";
@@ -38,8 +39,34 @@ const getRouteFromHash = (): RouteKey => {
   return validRoutes.includes(hash) ? hash : "login";
 };
 
+function normalizeRole(role: string): "admin" | "teacher" {
+  return role.toLowerCase() === "teacher" ? "teacher" : "admin";
+}
+
+function defaultRouteForRole(role: string): RouteKey {
+  return normalizeRole(role) === "teacher" ? "teacher-dashboard" : "dashboard";
+}
+
+function isRouteAllowed(route: RouteKey, user: AuthUser | null): boolean {
+  if (route === "login") {
+    return user === null;
+  }
+
+  if (user === null) {
+    return false;
+  }
+
+  if (normalizeRole(user.role) === "teacher") {
+    return ["teacher-dashboard", "attendance", "teacher-reports"].includes(route);
+  }
+
+  return ["dashboard", "students", "teachers", "reports", "settings"].includes(route);
+}
+
 function App() {
   const [route, setRoute] = useState<RouteKey>(getRouteFromHash);
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
 
   useEffect(() => {
     const onHashChange = () => {
@@ -50,67 +77,122 @@ function App() {
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
+  useEffect(() => {
+    getCurrentUser()
+      .then((user) => setAuthUser(user))
+      .catch(() => setAuthUser(null))
+      .finally(() => setIsAuthReady(true));
+  }, []);
+
   const navigate = (nextRoute: RouteKey) => {
     window.location.hash = `/${nextRoute}`;
   };
 
-  const page = useMemo(() => {
-    switch (route) {
-      case "login":
-        return <LoginPage onLogin={navigate} />;
-      case "students":
-        return (
-          <AppShell activeRoute={route} onNavigate={navigate}>
-            <StudentsPage />
-          </AppShell>
-        );
-      case "teachers":
-        return (
-          <AppShell activeRoute={route} onNavigate={navigate}>
-            <TeachersPage />
-          </AppShell>
-        );
-      case "reports":
-        return (
-          <AppShell activeRoute={route} onNavigate={navigate}>
-            <ReportsPage />
-          </AppShell>
-        );
-      case "settings":
-        return (
-          <AppShell activeRoute={route} onNavigate={navigate}>
-            <SettingsPage />
-          </AppShell>
-        );
-      case "teacher-dashboard":
-        return (
-          <AppShell activeRoute={route} onNavigate={navigate} variant="teacher">
-            <TeacherDashboardPage />
-          </AppShell>
-        );
-      case "attendance":
-        return (
-          <AppShell activeRoute={route} onNavigate={navigate} variant="teacher">
-            <TeacherAttendancePage />
-          </AppShell>
-        );
-      case "teacher-reports":
-        return (
-          <AppShell activeRoute={route} onNavigate={navigate} variant="teacher">
-            <TeacherReportsPage />
-          </AppShell>
-        );
-      case "dashboard":
-      default:
-        return (
-          <AppShell activeRoute="dashboard" onNavigate={navigate}>
-            <DashboardPage />
-          </AppShell>
-        );
+  useEffect(() => {
+    if (!isAuthReady) {
+      return;
     }
-  }, [route]);
 
-  return page;
+    if (!isRouteAllowed(route, authUser)) {
+      navigate(authUser ? defaultRouteForRole(authUser.role) : "login");
+    }
+  }, [authUser, isAuthReady, route]);
+
+  const handleLogin = async ({
+    email,
+    password,
+    expectedRole,
+  }: {
+    email: string;
+    password: string;
+    expectedRole: "admin" | "teacher";
+  }) => {
+    try {
+      const user = await login(email, password);
+      const actualRole = normalizeRole(user.role);
+
+      if (actualRole !== expectedRole) {
+        return `This account is not allowed to log in as ${expectedRole}.`;
+      }
+
+      setAuthUser(user);
+      navigate(defaultRouteForRole(user.role));
+      return null;
+    } catch (error) {
+      return error instanceof Error ? error.message : "Unable to log in.";
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } finally {
+      setAuthUser(null);
+      navigate("login");
+    }
+  };
+
+  if (!isAuthReady) {
+    return <div className="login-screen">Loading...</div>;
+  }
+
+  if (!isRouteAllowed(route, authUser)) {
+    return <div className="login-screen">Loading...</div>;
+  }
+
+  switch (route) {
+    case "login":
+      return <LoginPage onLogin={handleLogin} />;
+    case "students":
+      return (
+        <AppShell activeRoute={route} onNavigate={navigate} onLogout={handleLogout}>
+          <StudentsPage />
+        </AppShell>
+      );
+    case "teachers":
+      return (
+        <AppShell activeRoute={route} onNavigate={navigate} onLogout={handleLogout}>
+          <TeachersPage />
+        </AppShell>
+      );
+    case "reports":
+      return (
+        <AppShell activeRoute={route} onNavigate={navigate} onLogout={handleLogout}>
+          <ReportsPage />
+        </AppShell>
+      );
+    case "settings":
+      return (
+        <AppShell activeRoute={route} onNavigate={navigate} onLogout={handleLogout}>
+          <SettingsPage />
+        </AppShell>
+      );
+    case "teacher-dashboard":
+      return (
+        <AppShell activeRoute={route} onNavigate={navigate} onLogout={handleLogout} variant="teacher">
+          <TeacherDashboardPage />
+        </AppShell>
+      );
+    case "attendance":
+      return (
+        <AppShell activeRoute={route} onNavigate={navigate} onLogout={handleLogout} variant="teacher">
+          <TeacherAttendancePage />
+        </AppShell>
+      );
+    case "teacher-reports":
+      return (
+        <AppShell activeRoute={route} onNavigate={navigate} onLogout={handleLogout} variant="teacher">
+          <TeacherReportsPage />
+        </AppShell>
+      );
+    case "dashboard":
+    default:
+      return (
+        <AppShell activeRoute="dashboard" onNavigate={navigate} onLogout={handleLogout}>
+          <DashboardPage />
+        </AppShell>
+      );
+  }
 }
 
 export default App;

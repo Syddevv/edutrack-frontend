@@ -1,15 +1,23 @@
-import { useState } from 'react'
-import { CheckCircleIcon, ClockIcon, SchoolIcon, SlidersIcon } from '../components/Icons'
+import { useState } from "react";
+import {
+  CheckCircleIcon,
+  ClockIcon,
+  SchoolIcon,
+  SlidersIcon,
+} from "../components/Icons";
 
 export function SettingsPage() {
-  const [isAiInsightsEnabled, setIsAiInsightsEnabled] = useState(false)
+  const [isAiInsightsEnabled, setIsAiInsightsEnabled] = useState(false);
 
   return (
     <section className="page">
       <header className="page__topbar page__topbar--stack">
         <div>
           <h1 className="page-title heading-tight">General Settings</h1>
-          <p className="page-subtitle">Configure global settings for your institution, attendance rules, and system preferences.</p>
+          <p className="page-subtitle">
+            Configure global settings for your institution, attendance rules,
+            and system preferences.
+          </p>
         </div>
       </header>
 
@@ -22,7 +30,9 @@ export function SettingsPage() {
               </span>
               <div>
                 <h2 className="section-title">School Profile</h2>
-                <p className="section-subtitle">Manage your institution&apos;s core details.</p>
+                <p className="section-subtitle">
+                  Manage your institution&apos;s core details.
+                </p>
               </div>
             </div>
           </div>
@@ -33,7 +43,9 @@ export function SettingsPage() {
               <span className="field__input field__input--muted">
                 <input type="text" defaultValue="Lincoln High School" />
               </span>
-              <span className="field__hint">Update your institution&apos;s display name.</span>
+              <span className="field__hint">
+                Update your institution&apos;s display name.
+              </span>
             </label>
 
             <label className="field">
@@ -45,14 +57,19 @@ export function SettingsPage() {
                   <option>2025 - 2026</option>
                 </select>
               </span>
-              <span className="field__hint field__hint--spacer" aria-hidden="true">
+              <span
+                className="field__hint field__hint--spacer"
+                aria-hidden="true"
+              >
                 Reserved helper text spacing.
               </span>
             </label>
           </div>
 
           <div className="settings-actions">
-            <button className="button button--primary" type="button">Save Changes</button>
+            <button className="button button--primary" type="button">
+              Save Changes
+            </button>
           </div>
         </section>
 
@@ -76,7 +93,7 @@ export function SettingsPage() {
                 <div className="field__hint">Smart attendance trends.</div>
               </div>
               <button
-                className={`toggle${isAiInsightsEnabled ? ' toggle--on' : ''}`}
+                className={`toggle${isAiInsightsEnabled ? " toggle--on" : ""}`}
                 type="button"
                 aria-label="Toggle AI Insights"
                 aria-pressed={isAiInsightsEnabled}
@@ -97,7 +114,9 @@ export function SettingsPage() {
           </div>
 
           <div className="settings-actions settings-actions--compact">
-            <button className="button button--primary" type="button">Save</button>
+            <button className="button button--primary" type="button">
+              Save
+            </button>
           </div>
         </section>
       </div>
@@ -110,7 +129,9 @@ export function SettingsPage() {
             </span>
             <div>
               <h2 className="section-title">Attendance Policy</h2>
-              <p className="section-subtitle">Configure how attendance is tracked and marked.</p>
+              <p className="section-subtitle">
+                Configure how attendance is tracked and marked.
+              </p>
             </div>
           </div>
         </div>
@@ -120,10 +141,16 @@ export function SettingsPage() {
             <span className="field__label">Daily Start Time</span>
             <span className="field__input">
               <ClockIcon className="field__icon" />
-              <input className="font-data" type="text" defaultValue="08:00 AM" />
+              <input
+                className="font-data"
+                type="text"
+                defaultValue="08:00 AM"
+              />
               <ClockIcon className="field__icon" />
             </span>
-            <span className="field__hint">Classes starting after this time are marked late.</span>
+            <span className="field__hint">
+              Classes starting after this time are marked late.
+            </span>
           </label>
 
           <label className="field">
@@ -132,17 +159,20 @@ export function SettingsPage() {
               <input className="font-data" type="text" defaultValue="15" />
               <span className="field__suffix">min</span>
             </span>
-            <span className="field__hint">Buffer time before marked absent.</span>
+            <span className="field__hint">
+              Buffer time before marked absent.
+            </span>
           </label>
         </div>
 
         <div className="settings-divider" />
 
         <div className="settings-actions">
-          <button className="button button--primary" type="button">Save Rules</button>
+          <button className="button button--primary" type="button">
+            Save Rules
+          </button>
         </div>
       </section>
-
     </section>
-  )
+  );
 }

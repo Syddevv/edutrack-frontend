@@ -2673,6 +2673,13 @@ input {
   margin-top: -2px;
 }
 
+.login-card__error {
+  margin: -2px 0 0;
+  color: #dc2626;
+  font-size: 14px;
+  font-weight: 500;
+}
+
 .checkbox {
   display: inline-flex;
   align-items: center;

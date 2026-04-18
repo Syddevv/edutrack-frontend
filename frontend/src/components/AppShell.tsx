@@ -17,6 +17,7 @@ type AppShellProps = {
   children: ReactNode;
   variant?: "admin" | "teacher";
   onNavigate: (route: RouteKey) => void;
+  onLogout: () => Promise<void>;
 };
 
 type NavItem = {
@@ -85,9 +86,11 @@ export function AppShell({
   children,
   variant = "admin",
   onNavigate,
+  onLogout,
 }: AppShellProps) {
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const sidebarItems = variant === "teacher" ? teacherNavItems : navItems;
 
   return (
@@ -132,12 +135,14 @@ export function AppShell({
         isOpen={isLogoutConfirmOpen}
         title="Log Out"
         message="Are you sure you want to log out of EduTrack?"
-        confirmLabel="Log Out"
+        confirmLabel={isLoggingOut ? "Logging Out..." : "Log Out"}
         tone="danger"
         onCancel={() => setIsLogoutConfirmOpen(false)}
-        onConfirm={() => {
+        onConfirm={async () => {
+          setIsLoggingOut(true);
+          await onLogout();
+          setIsLoggingOut(false);
           setIsLogoutConfirmOpen(false);
-          onNavigate("login");
         }}
       />
       <ChatbotPanel

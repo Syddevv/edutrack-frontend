@@ -1,11 +1,34 @@
-import type { RouteKey } from "../App";
+import { useState } from "react";
 import { GraduationCapIcon, LockIcon, MailIcon } from "../components/Icons";
 
 type LoginPageProps = {
-  onLogin: (route: RouteKey) => void;
+  onLogin: (credentials: {
+    email: string;
+    password: string;
+    expectedRole: "admin" | "teacher";
+  }) => Promise<string | null>;
 };
 
 export function LoginPage({ onLogin }: LoginPageProps) {
+  const [email, setEmail] = useState("user@school.edu");
+  const [password, setPassword] = useState("password");
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleLogin(expectedRole: "admin" | "teacher") {
+    setIsSubmitting(true);
+    setError(null);
+
+    const nextError = await onLogin({
+      email,
+      password,
+      expectedRole,
+    });
+
+    setError(nextError);
+    setIsSubmitting(false);
+  }
+
   return (
     <div className="login-screen">
       <div className="login-card">
@@ -25,7 +48,11 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             <span className="field__label">Email</span>
             <span className="field__input">
               <MailIcon className="field__icon" />
-              <input type="email" defaultValue="user@school.edu" />
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
             </span>
           </label>
 
@@ -33,9 +60,15 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             <span className="field__label">Password</span>
             <span className="field__input">
               <LockIcon className="field__icon" />
-              <input type="password" defaultValue="password" />
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
             </span>
           </label>
+
+          {error ? <p className="login-card__error">{error}</p> : null}
 
           <div className="login-card__meta">
             <label className="checkbox">
@@ -51,14 +84,16 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             <button
               className="button button--primary button--stretch"
               type="button"
-              onClick={() => onLogin("dashboard")}
+              disabled={isSubmitting}
+              onClick={() => void handleLogin("admin")}
             >
-              Login as Admin
+              {isSubmitting ? "Logging in..." : "Login as Admin"}
             </button>
             <button
               className="button button--secondary button--stretch"
               type="button"
-              onClick={() => onLogin("teacher-dashboard")}
+              disabled={isSubmitting}
+              onClick={() => void handleLogin("teacher")}
             >
               Login as Teacher
             </button>
