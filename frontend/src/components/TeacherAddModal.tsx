@@ -32,6 +32,7 @@ function createDefaultDraft(lookups: TeacherLookupData): TeacherAssignedClass {
     courseId: lookups.courses[0]?.id ?? 0,
     yearLevelId: lookups.yearLevels[0]?.id ?? 0,
     sectionId: lookups.sections[0]?.id ?? 0,
+    dayOfWeek: "Monday",
     startTime: "08:00",
     endTime: "09:30",
   };

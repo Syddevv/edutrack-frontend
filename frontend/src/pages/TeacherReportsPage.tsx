@@ -1,7 +1,14 @@
-import { useState } from "react";
-import { ChangeClassModal, type TeacherClassSelection } from "../components/ChangeClassModal";
+import { useEffect, useMemo, useState } from "react";
+import {
+  ChangeClassModal,
+  type TeacherClassSelection,
+} from "../components/ChangeClassModal";
 import { ConfirmationDialog } from "../components/ConfirmationDialog";
-import { DownloadIcon, FilterIcon, RefreshIcon, UsersIcon } from "../components/Icons";
+import { DownloadIcon, FilterIcon, RefreshIcon } from "../components/Icons";
+import {
+  getTeacherReports,
+  type TeacherReportsOverview,
+} from "../teacherReports";
 
 type SummaryCard = {
   title: string;
@@ -10,40 +17,6 @@ type SummaryCard = {
   badge?: string;
   badgeTone?: "success";
 };
-
-const summaryCards: SummaryCard[] = [
-  {
-    title: "Class Attendance Rate",
-    value: "90.8%",
-    meta: "vs. last week",
-    badge: "↑1.2%",
-    badgeTone: "success",
-  },
-  {
-    title: "Total Students",
-    value: "32",
-    meta: "Enrolled in your section",
-  },
-  {
-    title: "Sessions Marked",
-    value: "18/20",
-    meta: "This month",
-  },
-];
-
-const atRiskStudents = [
-  { name: "Bob Smith", id: "STU-002", absences: 6, rate: 71 },
-  { name: "Marco Tan", id: "STU-014", absences: 5, rate: 76 },
-  { name: "Jenna Cruz", id: "STU-027", absences: 4, rate: 78 },
-] as const;
-
-const weeklyAttendance = [
-  { day: "Mon", value: 94, trend: "up" },
-  { day: "Tue", value: 91, trend: "up" },
-  { day: "Wed", value: 96, trend: "up" },
-  { day: "Thu", value: 88, trend: "down" },
-  { day: "Fri", value: 85, trend: "down" },
-] as const;
 
 function AlertIcon() {
   return (
@@ -64,14 +37,6 @@ function AlertIcon() {
   );
 }
 
-function TrendArrow({ direction }: { direction: "up" | "down" }) {
-  if (direction === "up") {
-    return <span className="teacher-reports-trend teacher-reports-trend--up">↗</span>;
-  }
-
-  return <span className="teacher-reports-trend teacher-reports-trend--down">↘</span>;
-}
-
 function formatClass(selection: TeacherClassSelection) {
   return `${selection.course} • ${selection.year} - ${selection.section}`;
 }
@@ -79,11 +44,64 @@ function formatClass(selection: TeacherClassSelection) {
 export function TeacherReportsPage() {
   const [isExportConfirmOpen, setIsExportConfirmOpen] = useState(false);
   const [isChangeClassOpen, setIsChangeClassOpen] = useState(false);
-  const [selectedClass, setSelectedClass] = useState<TeacherClassSelection>({
-    course: "BSIS",
-    year: "1st Year",
-    section: "A",
-  });
+  const [overview, setOverview] = useState<TeacherReportsOverview | null>(null);
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [pageError, setPageError] = useState("");
+
+  useEffect(() => {
+    void loadReports(selectedClassId ?? undefined);
+  }, [selectedClassId]);
+
+  async function loadReports(classId?: number) {
+    setIsLoading(true);
+    setPageError("");
+
+    try {
+      const response = await getTeacherReports(classId);
+      setOverview(response);
+      setSelectedClassId((current) =>
+        current === response.selectedClassId ? current : response.selectedClassId
+      );
+    } catch (error) {
+      setPageError(
+        error instanceof Error ? error.message : "Failed to load teacher reports."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  const selectedClass = useMemo(
+    () =>
+      overview?.assignments.find(
+        (assignment) => assignment.classId === overview.selectedClassId
+      ) ?? null,
+    [overview]
+  );
+
+  const summaryCards = useMemo<SummaryCard[]>(() => {
+    if (!overview) {
+      return [];
+    }
+
+    const delta = overview.summary.attendanceRateDelta;
+
+    return [
+      {
+        title: "Class Attendance Rate",
+        value: `${overview.summary.attendanceRate.toFixed(1)}%`,
+        meta: "vs. last week",
+        badge: `${delta >= 0 ? "↑" : "↓"}${Math.abs(delta).toFixed(1)}%`,
+        badgeTone: "success",
+      },
+      {
+        title: "Total Students",
+        value: overview.summary.totalStudents.toLocaleString(),
+        meta: "Enrolled in your section",
+      },
+    ];
+  }, [overview]);
 
   return (
     <section className="page teacher-reports-page">
@@ -94,14 +112,23 @@ export function TeacherReportsPage() {
           </h1>
           <p className="page-subtitle teacher-reports-subtitle">
             Showing data for{" "}
-            <span className="teacher-reports-chip">{formatClass(selectedClass)}</span>
+            <span className="teacher-reports-chip">
+              {selectedClass ? formatClass(selectedClass) : "No class assigned"}
+            </span>
           </p>
+          {selectedClass ? (
+            <p className="page-subtitle teacher-reports-subtitle">
+              {selectedClass.subject} • {selectedClass.startTime} -{" "}
+              {selectedClass.endTime}
+            </p>
+          ) : null}
         </div>
         <div className="page-actions teacher-reports-actions">
           <button
             className="button button--primary teacher-reports-change-button"
             type="button"
             onClick={() => setIsChangeClassOpen(true)}
+            disabled={isLoading || !overview || overview.assignments.length === 0}
           >
             <RefreshIcon className="button__icon" />
             Change Class
@@ -121,26 +148,34 @@ export function TeacherReportsPage() {
         </div>
       </header>
 
+      {pageError ? <p className="login-card__error">{pageError}</p> : null}
+
       <div className="teacher-reports-stats">
-        {summaryCards.map((card) => (
-          <article className="stat-card teacher-reports-stat" key={card.title}>
-            <p className="teacher-reports-stat__label">{card.title}</p>
-            <div className="teacher-reports-stat__value-row">
-              <div className="teacher-reports-stat__value">{card.value}</div>
-              {"badge" in card && card.badge ? (
-                <span
-                  className={`teacher-reports-stat__badge teacher-reports-stat__badge--${card.badgeTone}`}
-                >
-                  {card.badge}
-                </span>
-              ) : null}
-            </div>
-            <p className="teacher-reports-stat__meta">{card.meta}</p>
-          </article>
-        ))}
+        {isLoading ? (
+          <p className="page-subtitle">Loading class reports...</p>
+        ) : summaryCards.length > 0 ? (
+          summaryCards.map((card) => (
+            <article className="stat-card teacher-reports-stat" key={card.title}>
+              <p className="teacher-reports-stat__label">{card.title}</p>
+              <div className="teacher-reports-stat__value-row">
+                <div className="teacher-reports-stat__value">{card.value}</div>
+                {card.badge ? (
+                  <span
+                    className={`teacher-reports-stat__badge teacher-reports-stat__badge--${card.badgeTone}`}
+                  >
+                    {card.badge}
+                  </span>
+                ) : null}
+              </div>
+              <p className="teacher-reports-stat__meta">{card.meta}</p>
+            </article>
+          ))
+        ) : (
+          <p className="page-subtitle">No report data available.</p>
+        )}
       </div>
 
-      <div className="teacher-reports-layout">
+      <div className="teacher-reports-layout teacher-reports-layout--single">
         <section className="panel teacher-reports-panel">
           <div className="teacher-reports-panel__head">
             <div className="teacher-reports-panel__title-wrap">
@@ -149,7 +184,9 @@ export function TeacherReportsPage() {
                 At-Risk Students
               </h2>
             </div>
-            <span className="teacher-reports-panel__caption">Below 80% attendance</span>
+            <span className="teacher-reports-panel__caption">
+              Below 80% attendance
+            </span>
           </div>
 
           <table className="data-table teacher-reports-table">
@@ -161,64 +198,57 @@ export function TeacherReportsPage() {
               </tr>
             </thead>
             <tbody>
-              {atRiskStudents.map((student) => (
-                <tr key={student.id}>
-                  <td>
-                    <div className="table-stack">
-                      <div className="person__name">{student.name}</div>
-                      <div className="person__meta font-data">{student.id}</div>
-                    </div>
-                  </td>
-                  <td className="teacher-reports-table__number">{student.absences}</td>
-                  <td>
-                    <div className="rate-cell">
-                      <div className="mini-bar">
-                        <span style={{ width: `${student.rate}%` }} />
-                      </div>
-                      <span className="rate-cell__value">{student.rate}%</span>
-                    </div>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={3} className="page-subtitle">
+                    Loading at-risk students...
                   </td>
                 </tr>
-              ))}
+              ) : overview && overview.atRiskStudents.length > 0 ? (
+                overview.atRiskStudents.map((student) => (
+                  <tr key={student.studentId}>
+                    <td>
+                      <div className="table-stack">
+                        <div className="person__name">{student.fullName}</div>
+                        <div className="person__meta font-data">
+                          {student.studentCode}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="teacher-reports-table__number">
+                      {student.absences}
+                    </td>
+                    <td>
+                      <div className="rate-cell">
+                        <div className="mini-bar">
+                          <span style={{ width: `${student.attendanceRate}%` }} />
+                        </div>
+                        <span className="rate-cell__value">
+                          {student.attendanceRate}%
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={3} className="page-subtitle">
+                    No at-risk students found for this class.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </section>
-
-        <aside className="panel teacher-reports-sidepanel">
-          <div className="teacher-reports-sidepanel__head">
-            <div className="teacher-reports-sidepanel__title-wrap">
-              <UsersIcon className="teacher-reports-sidepanel__icon" />
-              <h2 className="section-title teacher-reports-sidepanel__title">
-                Weekly Attendance
-              </h2>
-            </div>
-          </div>
-
-          <div className="teacher-reports-week-list">
-            {weeklyAttendance.map((item) => (
-              <article className="teacher-reports-week-card" key={item.day}>
-                <div className="teacher-reports-week-card__top">
-                  <span className="teacher-reports-week-card__day">{item.day}</span>
-                  <div className="teacher-reports-week-card__value">
-                    <span>{item.value}%</span>
-                    <TrendArrow direction={item.trend} />
-                  </div>
-                </div>
-                <div className="mini-bar mini-bar--full teacher-reports-week-card__bar">
-                  <span style={{ width: `${item.value}%` }} />
-                </div>
-              </article>
-            ))}
-          </div>
-        </aside>
       </div>
 
       <ChangeClassModal
-        isOpen={isChangeClassOpen}
+        assignedClasses={overview?.assignments ?? []}
         currentSelection={selectedClass}
+        isOpen={isChangeClassOpen}
         onClose={() => setIsChangeClassOpen(false)}
         onApply={(selection) => {
-          setSelectedClass(selection);
+          setSelectedClassId(selection.classId);
           setIsChangeClassOpen(false);
         }}
       />

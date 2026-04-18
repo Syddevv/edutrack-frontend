@@ -718,6 +718,12 @@ input {
   border-radius: 12px;
 }
 
+.teacher-dashboard-button--secondary {
+  background: #fff;
+  color: #171717;
+  border: 1px solid #e5e7eb;
+}
+
 .teacher-dashboard-stats {
   margin-bottom: 28px;
 }
@@ -898,6 +904,257 @@ input {
   text-align: center;
 }
 
+.teacher-schedule-modal {
+  width: min(100%, 980px);
+  max-height: min(88vh, 860px);
+  overflow: hidden;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid #e5e1da;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+}
+
+.teacher-schedule-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 24px 14px;
+}
+
+.teacher-schedule-modal__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #171717;
+}
+
+.teacher-schedule-modal__subtitle {
+  margin: 6px 0 0;
+  color: #6f7682;
+  font-size: 14px;
+}
+
+.teacher-schedule-modal__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 24px 14px;
+}
+
+.teacher-schedule-modal__summary {
+  color: #6f7682;
+  font-size: 14px;
+  font-weight: 600;
+  min-height: 1px;
+}
+
+.teacher-schedule-modal__add {
+  border-radius: 999px;
+}
+
+.teacher-schedule-modal__error {
+  margin: 0 24px 16px;
+}
+
+.teacher-schedule-modal__body {
+  min-height: 0;
+  padding: 0 24px 24px;
+}
+
+.teacher-schedule-modal__body--list {
+  display: block;
+}
+
+.teacher-schedule-form__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.teacher-schedule-form__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #171717;
+}
+
+.teacher-schedule-form__cancel {
+  border-radius: 12px;
+}
+
+.teacher-schedule-form__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.teacher-schedule-form__note {
+  grid-column: 1 / -1;
+  border: 1px dashed #d1d5db;
+  border-radius: 14px;
+  background: #fff;
+  color: #6f7682;
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 12px 14px;
+}
+
+.teacher-schedule-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.teacher-schedule-week {
+  min-height: 0;
+  overflow: auto;
+  padding-right: 8px;
+  display: grid;
+  gap: 18px;
+  max-height: min(68vh, 620px);
+}
+
+.teacher-schedule-day {
+  display: grid;
+  gap: 12px;
+}
+
+.teacher-schedule-day__head {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+}
+
+.teacher-schedule-day__title {
+  margin: 0;
+  color: #171717;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.teacher-schedule-day__list {
+  display: grid;
+  gap: 12px;
+}
+
+.teacher-schedule-day__empty {
+  border: 1px dashed #e3e7ee;
+  border-radius: 16px;
+  background: #fff;
+  color: #8d929c;
+  font-size: 14px;
+  font-style: italic;
+  padding: 14px 16px;
+}
+
+.teacher-schedule-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  background: #fff;
+  padding: 16px 18px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+}
+
+.teacher-schedule-card__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: #f3f4f6;
+  color: #6b7280;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.teacher-schedule-card__icon-svg {
+  width: 18px;
+  height: 18px;
+}
+
+.teacher-schedule-card__content {
+  min-width: 0;
+}
+
+.teacher-schedule-card__title {
+  margin: 0;
+  color: #171717;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.teacher-schedule-card__meta {
+  margin: 3px 0 0;
+  color: #6f7682;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.teacher-schedule-card__time {
+  margin: 6px 0 0;
+  color: #4b5563;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.teacher-schedule-card__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.teacher-schedule-card__action {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #374151;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.teacher-schedule-card__action--danger {
+  color: #ef4444;
+}
+
+.teacher-schedule-card__action-icon {
+  width: 15px;
+  height: 15px;
+}
+
+.teacher-schedule-editor-backdrop {
+  z-index: 71;
+  background: rgba(23, 23, 23, 0.5);
+}
+
+.teacher-schedule-editor {
+  width: min(100%, 640px);
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid #e5e1da;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
+  padding: 20px 22px 22px;
+}
+
+.teacher-schedule-form {
+  display: grid;
+  gap: 16px;
+}
+
+.teacher-schedule-form--floating {
+  padding-top: 14px;
+}
+
 .teacher-dashboard-alert {
   position: relative;
   overflow: hidden;
@@ -983,8 +1240,8 @@ input {
 
 .teacher-attendance-scroll {
   min-height: 0;
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 0;
   overflow: hidden;
   padding-bottom: 20px;
@@ -1077,22 +1334,23 @@ input {
 .teacher-attendance-summary-card {
   display: flex;
   align-items: center;
-  gap: 16px;
-  min-height: 94px;
+  gap: 12px;
+  min-height: 72px;
   border: 1px solid var(--line);
   border-radius: 16px;
   background: #fff;
-  padding: 22px 20px;
+  padding: 14px 16px;
   box-shadow: var(--shadow);
 }
 
 .teacher-attendance-summary-card__icon {
-  width: 40px;
-  height: 40px;
+  width: 28px;
+  height: 28px;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto;
 }
 
 .teacher-attendance-summary-card__icon--present {
@@ -1111,15 +1369,15 @@ input {
 }
 
 .teacher-attendance-summary-card__label {
-  margin: 0 0 4px;
+  margin: 0 0 2px;
   color: #6f7682;
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .teacher-attendance-summary-card__value {
   margin: 0;
   color: #111827;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 800;
 }
 
@@ -1315,7 +1573,7 @@ input {
 
 .teacher-reports-stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 32px;
 }
@@ -1367,6 +1625,10 @@ input {
   gap: 20px;
 }
 
+.teacher-reports-layout--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .teacher-reports-panel,
 .teacher-reports-sidepanel {
   overflow: hidden;
@@ -1414,69 +1676,6 @@ input {
 .teacher-reports-table__number {
   color: #111827;
   font-weight: 700;
-}
-
-.teacher-reports-sidepanel__icon {
-  width: 18px;
-  height: 18px;
-  color: #111827;
-}
-
-.teacher-reports-week-list {
-  display: grid;
-  gap: 12px;
-  padding: 16px;
-}
-
-.teacher-reports-week-card {
-  border: 1px solid #eceff3;
-  border-radius: 14px;
-  background: #fff;
-  padding: 12px 14px;
-}
-
-.teacher-reports-week-card__top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-
-.teacher-reports-week-card__day {
-  color: #111827;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.teacher-reports-week-card__value {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #111827;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.teacher-reports-trend {
-  font-size: 15px;
-  line-height: 1;
-}
-
-.teacher-reports-trend--up {
-  color: #15803d;
-}
-
-.teacher-reports-trend--down {
-  color: #dc2626;
-}
-
-.teacher-reports-week-card__bar {
-  height: 6px;
-}
-
-.teacher-reports-week-card__bar span {
-  background: #171717;
 }
 
 .change-class-modal {
@@ -2839,13 +3038,15 @@ input {
   .teacher-reports-layout,
   .reports-layout,
   .settings-grid,
-  .settings-form--policy {
+  .settings-form--policy,
+  .teacher-schedule-modal__body {
     grid-template-columns: 1fr;
   }
 
   .teacher-reports-stats,
   .teacher-attendance-filters,
-  .teacher-attendance-summary {
+  .teacher-attendance-summary,
+  .teacher-schedule-form__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -2902,7 +3103,10 @@ input {
   .teacher-dashboard-actions,
   .teacher-dashboard-section-head,
   .teacher-attendance-footer,
-  .teacher-reports-actions {
+  .teacher-reports-actions,
+  .teacher-schedule-modal__toolbar,
+  .teacher-schedule-day__head,
+  .teacher-schedule-form__head {
     align-items: stretch;
   }
 
@@ -2911,7 +3115,8 @@ input {
   .pagination,
   .login-card__actions,
   .teacher-attendance-footer__actions,
-  .change-class-modal__footer {
+  .change-class-modal__footer,
+  .teacher-schedule-card__actions {
     flex-wrap: wrap;
   }
 
@@ -2950,6 +3155,10 @@ input {
     background: transparent;
     backdrop-filter: none;
   }
+
+  .teacher-schedule-modal {
+    max-height: calc(100vh - 36px);
+  }
 }
 
 @media (max-width: 640px) {
@@ -2972,6 +3181,19 @@ input {
 
   .teacher-reports-title {
     font-size: 28px;
+  }
+
+  .teacher-schedule-modal {
+    width: 100%;
+  }
+
+  .teacher-schedule-form__grid,
+  .teacher-schedule-card {
+    grid-template-columns: 1fr;
+  }
+
+  .teacher-schedule-card__actions {
+    justify-content: flex-end;
   }
 
   .teacher-dashboard-alert__actions {
@@ -3006,6 +3228,12 @@ input {
   .student-modal {
     width: 100%;
     padding: 18px;
+  }
+
+  .teacher-schedule-modal__header,
+  .teacher-schedule-modal__toolbar,
+  .teacher-schedule-modal__body {
+    padding-inline: 18px;
   }
 
   .student-modal__form--add {

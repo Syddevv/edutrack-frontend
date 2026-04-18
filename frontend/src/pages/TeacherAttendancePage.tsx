@@ -1,51 +1,35 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { CheckCircleIcon, ClockIcon, XCircleIcon } from "../components/Icons";
+import { ConfirmationDialog } from "../components/ConfirmationDialog";
 import {
-  CheckCircleIcon,
-  ClockIcon,
-  XCircleIcon,
-} from "../components/Icons";
-
-type AttendanceStatus = "Present" | "Late" | "Absent";
-
-type AttendanceStudent = {
-  id: string;
-  name: string;
-  course: string;
-  status: AttendanceStatus;
-};
-
-const initialStudents: AttendanceStudent[] = [
-  { id: "STU-001", name: "Alice Johnson", course: "BSIS", status: "Present" },
-  { id: "STU-002", name: "Bob Smith", course: "BSIS", status: "Present" },
-  { id: "STU-003", name: "Charlie Brown", course: "BSIS", status: "Present" },
-  { id: "STU-004", name: "David Lee", course: "BSIS", status: "Present" },
-  { id: "STU-005", name: "Eva Green", course: "BSIS", status: "Present" },
-  { id: "STU-006", name: "Fiona Cruz", course: "BSIS", status: "Present" },
-  { id: "STU-007", name: "George Hall", course: "BSIS", status: "Late" },
-  { id: "STU-008", name: "Hannah Scott", course: "BSIS", status: "Late" },
-  { id: "STU-009", name: "Ian Turner", course: "BSIS", status: "Late" },
-  { id: "STU-010", name: "Julia Reyes", course: "BSIS", status: "Absent" },
-  { id: "STU-011", name: "Kevin Moore", course: "BSIS", status: "Absent" },
-  { id: "STU-012", name: "Lia Santos", course: "BSIS", status: "Absent" },
-  { id: "STU-013", name: "Marco Diaz", course: "BSIS", status: "Present" },
-  { id: "STU-014", name: "Nina Patel", course: "BSIS", status: "Present" },
-  { id: "STU-015", name: "Owen James", course: "BSIS", status: "Present" },
-  { id: "STU-016", name: "Paula Cruz", course: "BSIS", status: "Present" },
-  { id: "STU-017", name: "Quinn Garcia", course: "BSIS", status: "Present" },
-  { id: "STU-018", name: "Rhea Mendoza", course: "BSIS", status: "Present" },
-  { id: "STU-019", name: "Sam Walker", course: "BSIS", status: "Present" },
-  { id: "STU-020", name: "Tina Flores", course: "BSIS", status: "Present" },
-  { id: "STU-021", name: "Uriel King", course: "BSIS", status: "Present" },
-  { id: "STU-022", name: "Vera Young", course: "BSIS", status: "Present" },
-  { id: "STU-023", name: "Will Gomez", course: "BSIS", status: "Present" },
-  { id: "STU-024", name: "Xena Lim", course: "BSIS", status: "Present" },
-  { id: "STU-025", name: "Yasmin Cole", course: "BSIS", status: "Present" },
-  { id: "STU-026", name: "Zack Rivera", course: "BSIS", status: "Present" },
-  { id: "STU-027", name: "Aiden Fox", course: "BSIS", status: "Present" },
-  { id: "STU-028", name: "Bella Nash", course: "BSIS", status: "Present" },
-];
+  getTeacherAttendance,
+  saveTeacherAttendance,
+  type AttendanceStatus,
+  type TeacherAttendanceAssignment,
+  type TeacherAttendanceStudent,
+} from "../teacherAttendance";
 
 const statusOptions: AttendanceStatus[] = ["Present", "Late", "Absent"];
+
+function getTodayDate() {
+  const now = new Date();
+  const offset = now.getTimezoneOffset();
+  const localDate = new Date(now.getTime() - offset * 60_000);
+  return localDate.toISOString().slice(0, 10);
+}
+
+function uniqueById<T extends { id: number }>(items: T[]) {
+  const seen = new Set<number>();
+
+  return items.filter((item) => {
+    if (seen.has(item.id)) {
+      return false;
+    }
+
+    seen.add(item.id);
+    return true;
+  });
+}
 
 function CalendarIcon() {
   return (
@@ -95,25 +79,195 @@ function StudentAvatar({ name }: { name: string }) {
 }
 
 export function TeacherAttendancePage() {
-  const [students, setStudents] = useState(initialStudents);
+  const [assignments, setAssignments] = useState<TeacherAttendanceAssignment[]>(
+    [],
+  );
+  const [students, setStudents] = useState<TeacherAttendanceStudent[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
+  const [selectedDate, setSelectedDate] = useState(getTodayDate);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveAction, setSaveAction] = useState<"save" | "reset">("save");
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+  const [pageError, setPageError] = useState("");
+  const [saveMessage, setSaveMessage] = useState("");
 
-  const summary = useMemo(() => {
-    const present = students.filter((student) => student.status === "Present").length;
-    const late = students.filter((student) => student.status === "Late").length;
-    const absent = students.filter((student) => student.status === "Absent").length;
-    return { present, late, absent, total: students.length };
-  }, [students]);
+  useEffect(() => {
+    void loadAttendance(selectedDate, selectedClassId ?? undefined);
+  }, [selectedDate, selectedClassId]);
 
-  const markedCount = useMemo(
-    () => students.filter((student) => student.status === "Present").length,
-    [students]
+  async function loadAttendance(date: string, classId?: number) {
+    setIsLoading(true);
+    setPageError("");
+
+    try {
+      const response = await getTeacherAttendance(date, classId);
+      setAssignments(response.assignments);
+      setStudents(response.students);
+      setSelectedDate(response.date);
+      setSelectedClassId((current) =>
+        current === response.selectedClassId
+          ? current
+          : response.selectedClassId,
+      );
+    } catch (error) {
+      setPageError(
+        error instanceof Error ? error.message : "Failed to load attendance.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  const selectedAssignment = useMemo(
+    () =>
+      assignments.find(
+        (assignment) => assignment.classId === selectedClassId,
+      ) ?? null,
+    [assignments, selectedClassId],
   );
 
-  function updateStatus(studentId: string, status: AttendanceStatus) {
+  const courseOptions = useMemo(
+    () => uniqueById(assignments.map((assignment) => assignment.course)),
+    [assignments],
+  );
+
+  const yearOptions = useMemo(() => {
+    const filteredAssignments = selectedAssignment
+      ? assignments.filter(
+          (assignment) => assignment.course.id === selectedAssignment.course.id,
+        )
+      : assignments;
+
+    return uniqueById(
+      filteredAssignments.map((assignment) => assignment.yearLevel),
+    );
+  }, [assignments, selectedAssignment]);
+
+  const sectionOptions = useMemo(() => {
+    const filteredAssignments = selectedAssignment
+      ? assignments.filter(
+          (assignment) =>
+            assignment.course.id === selectedAssignment.course.id &&
+            assignment.yearLevel.id === selectedAssignment.yearLevel.id,
+        )
+      : assignments;
+
+    return uniqueById(
+      filteredAssignments.map((assignment) => assignment.section),
+    );
+  }, [assignments, selectedAssignment]);
+
+  const summary = useMemo(() => {
+    const present = students.filter(
+      (student) => student.status === "Present",
+    ).length;
+    const late = students.filter((student) => student.status === "Late").length;
+    const absent = students.filter(
+      (student) => student.status === "Absent",
+    ).length;
+    const marked = students.filter((student) => student.status !== null).length;
+
+    return { present, late, absent, total: students.length, marked };
+  }, [students]);
+
+  function chooseAssignment(nextValues: {
+    courseId?: number;
+    yearLevelId?: number;
+    sectionId?: number;
+  }) {
+    if (assignments.length === 0) {
+      return;
+    }
+
+    const currentCourseId =
+      nextValues.courseId ?? selectedAssignment?.course.id;
+    const currentYearLevelId =
+      nextValues.yearLevelId ?? selectedAssignment?.yearLevel.id;
+    const currentSectionId =
+      nextValues.sectionId ?? selectedAssignment?.section.id;
+
+    const exactMatch = assignments.find(
+      (assignment) =>
+        assignment.course.id === currentCourseId &&
+        assignment.yearLevel.id === currentYearLevelId &&
+        assignment.section.id === currentSectionId,
+    );
+
+    const courseYearMatch = assignments.find(
+      (assignment) =>
+        assignment.course.id === currentCourseId &&
+        assignment.yearLevel.id === currentYearLevelId,
+    );
+
+    const courseMatch = assignments.find(
+      (assignment) => assignment.course.id === currentCourseId,
+    );
+
+    const fallback =
+      exactMatch ?? courseYearMatch ?? courseMatch ?? assignments[0];
+
+    setSaveMessage("");
+    setSelectedClassId(fallback?.classId ?? null);
+  }
+
+  function updateStatus(studentId: number, status: AttendanceStatus) {
+    setSaveMessage("");
     setStudents((current) =>
       current.map((student) =>
-        student.id === studentId ? { ...student, status } : student
-      )
+        student.id === studentId ? { ...student, status } : student,
+      ),
+    );
+  }
+
+  async function submitAttendance(
+    records: TeacherAttendanceStudent[],
+    successMessage: string,
+    action: "save" | "reset",
+  ) {
+    if (selectedClassId === null) {
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveAction(action);
+    setPageError("");
+    setSaveMessage("");
+
+    try {
+      const response = await saveTeacherAttendance({
+        classId: selectedClassId,
+        date: selectedDate,
+        records: records.map((student) => ({
+          studentId: student.id,
+          status: student.status,
+        })),
+      });
+
+      setAssignments(response.assignments);
+      setStudents(response.students);
+      setSelectedDate(response.date);
+      setSelectedClassId(response.selectedClassId);
+      setSaveMessage(successMessage);
+    } catch (error) {
+      setPageError(
+        error instanceof Error ? error.message : "Failed to save attendance.",
+      );
+    } finally {
+      setIsSaving(false);
+      setSaveAction("save");
+    }
+  }
+
+  async function handleSave() {
+    await submitAttendance(students, "Attendance saved successfully.", "save");
+  }
+
+  async function handleReset() {
+    await submitAttendance(
+      students.map((student) => ({ ...student, status: null })),
+      "Attendance reset successfully.",
+      "reset",
     );
   }
 
@@ -126,47 +280,101 @@ export function TeacherAttendancePage() {
               Mark Attendance
             </h1>
             <p className="page-subtitle teacher-attendance-subtitle">
-              Record daily attendance for your class section.
+              Record daily attendance for your assigned class section.
             </p>
+            {selectedAssignment ? (
+              <p className="page-subtitle teacher-attendance-subtitle">
+                {selectedAssignment.subject} • {selectedAssignment.startTime} -{" "}
+                {selectedAssignment.endTime}
+              </p>
+            ) : null}
           </div>
 
           <div className="teacher-attendance-filters">
             <label className="teacher-attendance-filter">
               <span className="teacher-attendance-filter__label">Course</span>
-              <select className="teacher-attendance-select" defaultValue="BSIS">
-                <option>BSIS</option>
-                <option>BSOM</option>
-                <option>BSCA</option>
-                <option>BSAIS</option>
-                <option>ACT</option>
+              <select
+                className="teacher-attendance-select"
+                value={selectedAssignment?.course.id ?? ""}
+                disabled={assignments.length === 0 || isLoading}
+                onChange={(event) =>
+                  chooseAssignment({ courseId: Number(event.target.value) })
+                }
+              >
+                {courseOptions.length === 0 ? (
+                  <option value="">No assignment</option>
+                ) : (
+                  courseOptions.map((course) => (
+                    <option key={course.id} value={course.id}>
+                      {course.code || course.name}
+                    </option>
+                  ))
+                )}
               </select>
             </label>
             <label className="teacher-attendance-filter">
               <span className="teacher-attendance-filter__label">Year</span>
-              <select className="teacher-attendance-select" defaultValue="1st Year">
-                <option>1st Year</option>
-                <option>2nd Year</option>
-                <option>3rd Year</option>
-                <option>4th Year</option>
+              <select
+                className="teacher-attendance-select"
+                value={selectedAssignment?.yearLevel.id ?? ""}
+                disabled={assignments.length === 0 || isLoading}
+                onChange={(event) =>
+                  chooseAssignment({ yearLevelId: Number(event.target.value) })
+                }
+              >
+                {yearOptions.length === 0 ? (
+                  <option value="">No assignment</option>
+                ) : (
+                  yearOptions.map((yearLevel) => (
+                    <option key={yearLevel.id} value={yearLevel.id}>
+                      {yearLevel.name}
+                    </option>
+                  ))
+                )}
               </select>
             </label>
             <label className="teacher-attendance-filter">
               <span className="teacher-attendance-filter__label">Section</span>
-              <select className="teacher-attendance-select" defaultValue="A">
-                <option>A</option>
-                <option>B</option>
-                <option>C</option>
+              <select
+                className="teacher-attendance-select"
+                value={selectedAssignment?.section.id ?? ""}
+                disabled={assignments.length === 0 || isLoading}
+                onChange={(event) =>
+                  chooseAssignment({ sectionId: Number(event.target.value) })
+                }
+              >
+                {sectionOptions.length === 0 ? (
+                  <option value="">No assignment</option>
+                ) : (
+                  sectionOptions.map((section) => (
+                    <option key={section.id} value={section.id}>
+                      {section.name}
+                    </option>
+                  ))
+                )}
               </select>
             </label>
             <label className="teacher-attendance-filter">
               <span className="teacher-attendance-filter__label">Date</span>
               <div className="teacher-attendance-date-field">
-                <input type="text" defaultValue="10/24/2023" />
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(event) => {
+                    setSaveMessage("");
+                    setSelectedDate(event.target.value);
+                  }}
+                />
                 <CalendarIcon />
               </div>
             </label>
           </div>
         </header>
+
+        {pageError ? <p className="login-card__error">{pageError}</p> : null}
+        {!pageError && saveMessage ? (
+          <p className="page-subtitle">{saveMessage}</p>
+        ) : null}
 
         <div className="teacher-attendance-summary">
           <article className="teacher-attendance-summary-card">
@@ -175,7 +383,9 @@ export function TeacherAttendancePage() {
             </div>
             <div>
               <p className="teacher-attendance-summary-card__label">Present</p>
-              <p className="teacher-attendance-summary-card__value">{summary.present}</p>
+              <p className="teacher-attendance-summary-card__value">
+                {summary.present}
+              </p>
             </div>
           </article>
 
@@ -185,7 +395,9 @@ export function TeacherAttendancePage() {
             </div>
             <div>
               <p className="teacher-attendance-summary-card__label">Late</p>
-              <p className="teacher-attendance-summary-card__value">{summary.late}</p>
+              <p className="teacher-attendance-summary-card__value">
+                {summary.late}
+              </p>
             </div>
           </article>
 
@@ -195,7 +407,9 @@ export function TeacherAttendancePage() {
             </div>
             <div>
               <p className="teacher-attendance-summary-card__label">Absent</p>
-              <p className="teacher-attendance-summary-card__value">{summary.absent}</p>
+              <p className="teacher-attendance-summary-card__value">
+                {summary.absent}
+              </p>
             </div>
           </article>
         </div>
@@ -220,37 +434,55 @@ export function TeacherAttendancePage() {
                 </tr>
               </thead>
               <tbody>
-                {students.map((student) => (
-                  <tr key={student.id}>
-                    <td>
-                      <div className="teacher-attendance-student">
-                        <StudentAvatar name={student.name} />
-                        <span className="teacher-attendance-student__name">
-                          {student.name}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="font-data teacher-attendance-id">{student.id}</td>
-                    <td>
-                      <div className="teacher-attendance-segmented">
-                        {statusOptions.map((status) => (
-                          <button
-                            key={status}
-                            className={`teacher-attendance-segmented__button${
-                              student.status === status
-                                ? ` teacher-attendance-segmented__button--${status.toLowerCase()}`
-                                : ""
-                            }`}
-                            type="button"
-                            onClick={() => updateStatus(student.id, status)}
-                          >
-                            {status}
-                          </button>
-                        ))}
-                      </div>
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={3} className="page-subtitle">
+                      Loading attendance...
                     </td>
                   </tr>
-                ))}
+                ) : students.length > 0 ? (
+                  students.map((student) => (
+                    <tr key={student.id}>
+                      <td>
+                        <div className="teacher-attendance-student">
+                          <StudentAvatar name={student.fullName} />
+                          <span className="teacher-attendance-student__name">
+                            {student.fullName}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="font-data teacher-attendance-id">
+                        {student.studentId}
+                      </td>
+                      <td>
+                        <div className="teacher-attendance-segmented">
+                          {statusOptions.map((status) => (
+                            <button
+                              key={status}
+                              className={`teacher-attendance-segmented__button${
+                                student.status === status
+                                  ? ` teacher-attendance-segmented__button--${status.toLowerCase()}`
+                                  : ""
+                              }`}
+                              type="button"
+                              onClick={() => updateStatus(student.id, status)}
+                            >
+                              {status}
+                            </button>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={3} className="page-subtitle">
+                      {assignments.length === 0
+                        ? "No assigned classes found."
+                        : "No students found for this class."}
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -259,18 +491,53 @@ export function TeacherAttendancePage() {
 
       <footer className="teacher-attendance-footer">
         <p className="teacher-attendance-footer__meta">
-          {markedCount} of {summary.total} students marked
+          {summary.marked} of {summary.total} students marked
         </p>
         <div className="teacher-attendance-footer__actions">
-          <button className="button button--secondary teacher-attendance-footer__button" type="button">
-            Cancel
+          <button
+            className="button button--secondary teacher-attendance-footer__button"
+            type="button"
+            onClick={() => setIsResetConfirmOpen(true)}
+            disabled={
+              isLoading ||
+              isSaving ||
+              selectedClassId === null ||
+              assignments.length === 0
+            }
+          >
+            {isSaving && saveAction === "reset"
+              ? "Resetting..."
+              : "Reset Attendance"}
           </button>
-          <button className="button button--primary teacher-attendance-footer__button teacher-attendance-footer__button--save" type="button">
+          <button
+            className="button button--primary teacher-attendance-footer__button teacher-attendance-footer__button--save"
+            type="button"
+            onClick={() => void handleSave()}
+            disabled={
+              isLoading ||
+              isSaving ||
+              selectedClassId === null ||
+              assignments.length === 0
+            }
+          >
             <SaveIcon />
-            Save Attendance
+            {isSaving ? "Saving..." : "Save Attendance"}
           </button>
         </div>
       </footer>
+
+      <ConfirmationDialog
+        isOpen={isResetConfirmOpen}
+        title="Reset Attendance"
+        message="Clear all attendance records for the selected class and date?"
+        confirmLabel="Reset Attendance"
+        tone="danger"
+        onCancel={() => setIsResetConfirmOpen(false)}
+        onConfirm={() => {
+          setIsResetConfirmOpen(false);
+          void handleReset();
+        }}
+      />
     </section>
   );
 }

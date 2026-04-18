@@ -11,6 +11,7 @@ export type TeacherAssignedClassPayload = {
   courseId: number;
   yearLevelId: number;
   sectionId: number;
+  dayOfWeek: "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday";
   startTime: string;
   endTime: string;
 };
@@ -22,6 +23,7 @@ export type TeacherAssignedClassRecord = {
   course: TeacherLookupOption;
   yearLevel: TeacherLookupOption;
   section: TeacherLookupOption;
+  dayOfWeek: TeacherAssignedClassPayload["dayOfWeek"];
   startTime: string;
   endTime: string;
 };

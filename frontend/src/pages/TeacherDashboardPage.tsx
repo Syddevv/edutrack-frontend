@@ -1,10 +1,14 @@
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import {
   CheckCircleIcon,
   ClockIcon,
   UsersIcon,
   XCircleIcon,
 } from "../components/Icons";
+import {
+  getTeacherDashboardOverview,
+  type TeacherDashboardOverview,
+} from "../teacherDashboard";
 
 type DashboardStatCard = {
   icon: ReactNode;
@@ -19,56 +23,14 @@ type DashboardStatCard = {
   accent?: string;
 };
 
-const statCards: DashboardStatCard[] = [
-  {
-    icon: <ClockIcon className="stat-card__icon" />,
-    title: "Today's Class",
-    value: "Math 101",
-    detail: "BSIS • 1st Year - A",
-    subtext: "09:00 AM - 10:30 AM",
-    badge: { tone: "success", label: "Active" },
-  },
-  {
-    icon: <UsersIcon className="stat-card__icon" />,
-    title: "Total Students",
-    value: "32",
-    subtext: "Enrolled in this session",
-  },
-  {
-    icon: <CheckCircleIcon className="stat-card__icon" />,
-    title: "Present Count",
-    value: "28",
-    subtext: "87.5% attendance rate",
-    badge: { tone: "success", label: "+2% vs last week" },
-    accent: "teacher-dashboard-card__value--success",
-  },
-  {
-    icon: <XCircleIcon className="stat-card__icon" />,
-    title: "Absent Count",
-    value: "4",
-    subtext: "Needs follow-up",
-  },
-];
-
-const recentActivityRows = [
-  { name: "Alice Johnson", status: "Present", className: "Math 101" },
-  { name: "Bob Smith", status: "Absent", className: "Math 101" },
-  { name: "Charlie Brown", status: "Present", className: "Math 101" },
-  { name: "David Lee", status: "Late", className: "Math 101" },
-  { name: "Eva Green", status: "Present", className: "Math 101" },
-] as const;
-
-const nextClassData = {
-  code: "11",
-  name: "Physics 202",
-  location: "Lab Room 3B",
-  time: "11:00 AM",
-  minutesRemaining: 45,
-} as const;
-
 function StatusBadge({ status }: { status: string }) {
+  const tone =
+    status === "Present" || status === "Absent" || status === "Late"
+      ? status.toLowerCase()
+      : "neutral";
+
   return (
-    <span className={`status-chip status-chip--${status.toLowerCase()}`}>
+    <span className={`status-chip status-chip--${tone}`}>
       <span className="teacher-dashboard-status-dot" aria-hidden="true" />
       {status}
     </span>
@@ -107,7 +69,79 @@ function SparkIcon() {
 }
 
 export function TeacherDashboardPage() {
+  const [overview, setOverview] = useState<TeacherDashboardOverview | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [pageError, setPageError] = useState("");
   const [dismissedAlert, setDismissedAlert] = useState(false);
+
+  useEffect(() => {
+    void loadOverview();
+  }, []);
+
+  async function loadOverview() {
+    setIsLoading(true);
+    setPageError("");
+
+    try {
+      const response = await getTeacherDashboardOverview();
+      setOverview(response);
+    } catch (error) {
+      setPageError(
+        error instanceof Error ? error.message : "Failed to load teacher dashboard."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  const statCards = useMemo<DashboardStatCard[]>(() => {
+    if (!overview) {
+      return [];
+    }
+
+    const delta = overview.summary.attendanceRateDelta;
+
+    return [
+      {
+        icon: <ClockIcon className="stat-card__icon" />,
+        title: "Today's Class",
+        value: overview.todayClass?.subject ?? "No Class Assigned",
+        detail: overview.todayClass
+          ? `${overview.todayClass.course} • ${overview.todayClass.yearLevel} - ${overview.todayClass.section}`
+          : undefined,
+        subtext: overview.todayClass
+          ? `${overview.todayClass.startTime} - ${overview.todayClass.endTime}`
+          : "No teacher schedule found",
+        badge:
+          overview.todayClass?.status === "active"
+            ? { tone: "success", label: "Active" }
+            : overview.todayClass?.status === "upcoming"
+              ? { tone: "danger", label: "Upcoming" }
+              : undefined,
+      },
+      {
+        icon: <UsersIcon className="stat-card__icon" />,
+        title: "Total Students",
+        value: overview.summary.totalStudents.toLocaleString(),
+        subtext: "Enrolled in this session",
+      },
+      {
+        icon: <CheckCircleIcon className="stat-card__icon" />,
+        title: "Present Count",
+        value: overview.summary.presentCount.toLocaleString(),
+        subtext: `${overview.summary.attendanceRate.toFixed(1)}% attendance rate`,
+        badge: { tone: "success", label: `${delta >= 0 ? "+" : ""}${delta.toFixed(1)}% vs previous` },
+        accent: "teacher-dashboard-card__value--success",
+      },
+      {
+        icon: <XCircleIcon className="stat-card__icon" />,
+        title: "Absent Count",
+        value: overview.summary.absentCount.toLocaleString(),
+        subtext:
+          overview.summary.absentCount > 0 ? "Needs follow-up" : "No absences recorded",
+      },
+    ];
+  }, [overview]);
 
   return (
     <section className="page">
@@ -116,24 +150,36 @@ export function TeacherDashboardPage() {
           <h1 className="page-title heading-tight teacher-dashboard-title">
             Dashboard
           </h1>
-          <p className="page-subtitle">Overview for Monday, October 24th</p>
+          <p className="page-subtitle">
+            {overview?.attendanceDateLabel
+              ? `Overview based on ${overview.attendanceDateLabel}`
+              : `Overview for ${overview?.dateLabel ?? ""}`}
+          </p>
         </div>
         <div className="page-actions teacher-dashboard-actions">
           <div className="count-pill teacher-dashboard-date-pill">
             <ClockIcon className="teacher-dashboard-date-icon" />
-            Oct 24, 2023
+            {overview?.dateLabel ?? ""}
           </div>
           <button
             className="button button--primary teacher-dashboard-button"
             type="button"
+            onClick={() => {
+              window.location.hash = "/attendance";
+            }}
           >
             Take Attendance
           </button>
         </div>
       </header>
 
+      {pageError ? <p className="login-card__error">{pageError}</p> : null}
+
       <div className="stats-grid stats-grid--four teacher-dashboard-stats">
-        {statCards.map((card) => (
+        {isLoading ? (
+          <p className="page-subtitle">Loading dashboard...</p>
+        ) : (
+          statCards.map((card) => (
           <article
             className="stat-card teacher-dashboard-card"
             key={card.title}
@@ -159,7 +205,7 @@ export function TeacherDashboardPage() {
             ) : null}
             <p className="stat-card__hint">{card.subtext}</p>
           </article>
-        ))}
+        )))}
       </div>
 
       <div className="teacher-dashboard-content">
@@ -168,9 +214,9 @@ export function TeacherDashboardPage() {
             <h2 className="section-title teacher-dashboard-section-title">
               Recent Activity
             </h2>
-            <a className="teacher-dashboard-link" href="#">
-              View All
-            </a>
+            <button className="teacher-dashboard-link" type="button" onClick={() => void loadOverview()}>
+              Refresh
+            </button>
           </div>
 
           <section className="panel">
@@ -183,11 +229,16 @@ export function TeacherDashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {recentActivityRows.map((row) => (
-                  <tr key={row.name}>
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={3} className="page-subtitle">Loading activity...</td>
+                  </tr>
+                ) : overview && overview.recentActivity.length > 0 ? (
+                  overview.recentActivity.map((row) => (
+                  <tr key={`${row.studentId}-${row.className}`}>
                     <td>
                       <span className="teacher-dashboard-student-name">
-                        {row.name}
+                        {row.fullName}
                       </span>
                     </td>
                     <td>
@@ -195,7 +246,12 @@ export function TeacherDashboardPage() {
                     </td>
                     <td>{row.className}</td>
                   </tr>
-                ))}
+                ))
+                ) : (
+                  <tr>
+                    <td colSpan={3} className="page-subtitle">No recent attendance found.</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </section>
@@ -216,14 +272,14 @@ export function TeacherDashboardPage() {
 
             <div className="teacher-dashboard-sidecard__body">
               <div className="teacher-dashboard-sidecard__code">
-                {nextClassData.code}
+                {overview?.nextClass?.classId ?? "--"}
               </div>
               <div>
                 <p className="teacher-dashboard-sidecard__name">
-                  {nextClassData.name}
+                  {overview?.nextClass?.subject ?? "No upcoming class"}
                 </p>
                 <p className="teacher-dashboard-sidecard__meta">
-                  {nextClassData.location} • {nextClassData.time}
+                  {overview?.nextClass?.time ?? "No time scheduled"}
                 </p>
               </div>
             </div>
@@ -231,7 +287,11 @@ export function TeacherDashboardPage() {
             <div className="teacher-dashboard-sidecard__footer">
               <div className="teacher-dashboard-sidecard__progress" />
               <p className="teacher-dashboard-sidecard__countdown">
-                {nextClassData.minutesRemaining} mins remaining until start
+                {overview?.nextClass
+                  ? overview.nextClass.isToday
+                    ? `${overview.nextClass.minutesRemaining} mins remaining until start`
+                    : `${overview.nextClass.dayOfWeek ?? "Upcoming"} class`
+                  : "No upcoming class on schedule"}
               </p>
             </div>
           </section>

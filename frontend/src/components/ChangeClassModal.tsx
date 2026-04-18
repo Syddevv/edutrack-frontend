@@ -2,53 +2,95 @@ import { useEffect, useMemo, useState } from "react";
 import { CloseIcon } from "./Icons";
 
 export type TeacherClassSelection = {
+  classId: number;
+  scheduleId: number;
   course: string;
   year: string;
   section: string;
+  subject: string;
+  dayOfWeek: string | null;
+  startTime: string;
+  endTime: string;
 };
 
 type ChangeClassModalProps = {
-  currentSelection: TeacherClassSelection;
+  assignedClasses: TeacherClassSelection[];
+  currentSelection: TeacherClassSelection | null;
   isOpen: boolean;
   onApply: (selection: TeacherClassSelection) => void;
   onClose: () => void;
 };
-
-const assignedClasses: TeacherClassSelection[] = [
-  { course: "BSIS", year: "1st Year", section: "A" },
-  { course: "BSIS", year: "1st Year", section: "B" },
-  { course: "BSIS", year: "2nd Year", section: "A" },
-  { course: "ACT", year: "1st Year", section: "A" },
-];
 
 function formatClassTag(selection: TeacherClassSelection) {
   return `${selection.course} • ${selection.year} - ${selection.section}`;
 }
 
 export function ChangeClassModal({
+  assignedClasses,
   currentSelection,
   isOpen,
   onApply,
   onClose,
 }: ChangeClassModalProps) {
-  const [draft, setDraft] = useState(currentSelection);
+  const [draft, setDraft] = useState<TeacherClassSelection | null>(currentSelection);
 
   useEffect(() => {
     if (isOpen) {
-      setDraft(currentSelection);
+      setDraft(currentSelection ?? assignedClasses[0] ?? null);
     }
-  }, [currentSelection, isOpen]);
+  }, [assignedClasses, currentSelection, isOpen]);
 
-  const matchingAssignedClass = useMemo(
-    () =>
-      assignedClasses.find(
-        (item) =>
-          item.course === draft.course &&
-          item.year === draft.year &&
-          item.section === draft.section
-      ),
-    [draft]
+  const courseOptions = useMemo(
+    () => Array.from(new Set(assignedClasses.map((item) => item.course))),
+    [assignedClasses]
   );
+
+  const yearOptions = useMemo(() => {
+    const filtered = assignedClasses.filter(
+      (item) => item.course === (draft?.course ?? assignedClasses[0]?.course)
+    );
+
+    return Array.from(new Set(filtered.map((item) => item.year)));
+  }, [assignedClasses, draft]);
+
+  const sectionOptions = useMemo(() => {
+    const filtered = assignedClasses.filter(
+      (item) =>
+        item.course === (draft?.course ?? assignedClasses[0]?.course) &&
+        item.year === (draft?.year ?? assignedClasses[0]?.year)
+    );
+
+    return Array.from(new Set(filtered.map((item) => item.section)));
+  }, [assignedClasses, draft]);
+
+  function chooseDraft(nextValues: {
+    course?: string;
+    year?: string;
+    section?: string;
+  }) {
+    if (assignedClasses.length === 0) {
+      setDraft(null);
+      return;
+    }
+
+    const currentCourse = nextValues.course ?? draft?.course ?? assignedClasses[0].course;
+    const currentYear = nextValues.year ?? draft?.year ?? assignedClasses[0].year;
+    const currentSection =
+      nextValues.section ?? draft?.section ?? assignedClasses[0].section;
+
+    const exactMatch = assignedClasses.find(
+      (item) =>
+        item.course === currentCourse &&
+        item.year === currentYear &&
+        item.section === currentSection
+    );
+    const courseYearMatch = assignedClasses.find(
+      (item) => item.course === currentCourse && item.year === currentYear
+    );
+    const courseMatch = assignedClasses.find((item) => item.course === currentCourse);
+
+    setDraft(exactMatch ?? courseYearMatch ?? courseMatch ?? assignedClasses[0]);
+  }
 
   if (!isOpen) {
     return null;
@@ -87,16 +129,19 @@ export function ChangeClassModal({
             <span className="change-class-modal__label">Course</span>
             <select
               className="change-class-modal__select change-class-modal__select--primary"
-              value={draft.course}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, course: event.target.value }))
-              }
+              value={draft?.course ?? ""}
+              onChange={(event) => chooseDraft({ course: event.target.value })}
+              disabled={assignedClasses.length === 0}
             >
-              <option>BSIS</option>
-              <option>BSOM</option>
-              <option>BSCA</option>
-              <option>BSAIS</option>
-              <option>ACT</option>
+              {courseOptions.length === 0 ? (
+                <option value="">No assigned classes</option>
+              ) : (
+                courseOptions.map((course) => (
+                  <option key={course} value={course}>
+                    {course}
+                  </option>
+                ))
+              )}
             </select>
           </label>
 
@@ -105,15 +150,19 @@ export function ChangeClassModal({
               <span className="change-class-modal__label">Year Level</span>
               <select
                 className="change-class-modal__select"
-                value={draft.year}
-                onChange={(event) =>
-                  setDraft((current) => ({ ...current, year: event.target.value }))
-                }
+                value={draft?.year ?? ""}
+                onChange={(event) => chooseDraft({ year: event.target.value })}
+                disabled={assignedClasses.length === 0}
               >
-                <option>1st Year</option>
-                <option>2nd Year</option>
-                <option>3rd Year</option>
-                <option>4th Year</option>
+                {yearOptions.length === 0 ? (
+                  <option value="">No assigned classes</option>
+                ) : (
+                  yearOptions.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))
+                )}
               </select>
             </label>
 
@@ -121,14 +170,19 @@ export function ChangeClassModal({
               <span className="change-class-modal__label">Section</span>
               <select
                 className="change-class-modal__select"
-                value={draft.section}
-                onChange={(event) =>
-                  setDraft((current) => ({ ...current, section: event.target.value }))
-                }
+                value={draft?.section ?? ""}
+                onChange={(event) => chooseDraft({ section: event.target.value })}
+                disabled={assignedClasses.length === 0}
               >
-                <option>A</option>
-                <option>B</option>
-                <option>C</option>
+                {sectionOptions.length === 0 ? (
+                  <option value="">No assigned classes</option>
+                ) : (
+                  sectionOptions.map((section) => (
+                    <option key={section} value={section}>
+                      {section}
+                    </option>
+                  ))
+                )}
               </select>
             </label>
           </div>
@@ -136,25 +190,26 @@ export function ChangeClassModal({
           <div className="change-class-modal__assigned">
             <div className="change-class-modal__assigned-title">Your assigned classes</div>
             <div className="change-class-modal__chips">
-              {assignedClasses.map((item) => {
-                const isActive =
-                  item.course === (matchingAssignedClass ?? draft).course &&
-                  item.year === (matchingAssignedClass ?? draft).year &&
-                  item.section === (matchingAssignedClass ?? draft).section;
+              {assignedClasses.length === 0 ? (
+                <p className="page-subtitle">No assigned classes found.</p>
+              ) : (
+                assignedClasses.map((item) => {
+                  const isActive = item.classId === draft?.classId;
 
-                return (
-                  <button
-                    key={formatClassTag(item)}
-                    className={`change-class-modal__chip${
-                      isActive ? " change-class-modal__chip--active" : ""
-                    }`}
-                    type="button"
-                    onClick={() => setDraft(item)}
-                  >
-                    {formatClassTag(item)}
-                  </button>
-                );
-              })}
+                  return (
+                    <button
+                      key={item.classId}
+                      className={`change-class-modal__chip${
+                        isActive ? " change-class-modal__chip--active" : ""
+                      }`}
+                      type="button"
+                      onClick={() => setDraft(item)}
+                    >
+                      {formatClassTag(item)}
+                    </button>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
@@ -166,7 +221,12 @@ export function ChangeClassModal({
           <button
             className="button button--primary"
             type="button"
-            onClick={() => onApply(draft)}
+            onClick={() => {
+              if (draft) {
+                onApply(draft);
+              }
+            }}
+            disabled={draft === null}
           >
             Apply
           </button>

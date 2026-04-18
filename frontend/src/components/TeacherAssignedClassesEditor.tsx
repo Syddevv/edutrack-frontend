@@ -42,7 +42,7 @@ function formatAssignedClass(item: TeacherAssignedClass, lookups: TeacherLookupD
   const yearLevel = findOptionLabel(lookups.yearLevels, item.yearLevelId);
   const section = findOptionLabel(lookups.sections, item.sectionId);
 
-  return `${subject} • ${course} ${yearLevel}-${section}`;
+  return `${subject} • ${course} ${yearLevel}-${section} • ${item.dayOfWeek}`;
 }
 
 function formatTimeRange(item: TeacherAssignedClass) {
@@ -127,6 +127,22 @@ export function TeacherAssignedClassesEditor({
                   {section.name}
                 </option>
               ))}
+            </select>
+          </span>
+
+          <span className="teacher-modal__input-wrap teacher-modal__input-wrap--select">
+            <ClockIcon className="teacher-modal__input-icon" />
+            <select
+              className="teacher-modal__select"
+              value={draft.dayOfWeek}
+              onChange={(event) => onDraftChange("dayOfWeek", event.target.value)}
+            >
+              <option value="Monday">Monday</option>
+              <option value="Tuesday">Tuesday</option>
+              <option value="Wednesday">Wednesday</option>
+              <option value="Thursday">Thursday</option>
+              <option value="Friday">Friday</option>
+              <option value="Saturday">Saturday</option>
             </select>
           </span>
         </div>
