@@ -1,27 +1,34 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ConfirmationDialog } from "../components/ConfirmationDialog";
+import { getReportsOverview, type ReportsOverview } from "../reports";
 import {
   DownloadIcon,
   FilterIcon,
 } from "../components/Icons";
 
-const absenceRows = [
-  ["David Lee", "STU-004", "BSCA", "8", 62],
-  ["Bob Smith", "STU-002", "BSIS", "6", 71],
-  ["Marie Cruz", "STU-018", "ACT", "5", 74],
-  ["Liam Park", "STU-022", "BSAIS", "5", 76],
-] as const;
-
-const courseStats = [
-  ["BSIS", "312 students", "94%", "up", "1.8"],
-  ["BSOM", "248 students", "91%", "down", "0.6"],
-  ["BSCA", "196 students", "87%", "down", "2.4"],
-  ["BSAIS", "220 students", "93%", "up", "0.9"],
-  ["ACT", "264 students", "89%", "up", "1.2"],
-] as const;
-
 export function ReportsPage() {
   const [isExportConfirmOpen, setIsExportConfirmOpen] = useState(false);
+  const [overview, setOverview] = useState<ReportsOverview | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [pageError, setPageError] = useState("");
+
+  useEffect(() => {
+    void loadOverview();
+  }, []);
+
+  async function loadOverview() {
+    setIsLoading(true);
+    setPageError("");
+
+    try {
+      const response = await getReportsOverview();
+      setOverview(response);
+    } catch (error) {
+      setPageError(error instanceof Error ? error.message : "Failed to load reports.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   return (
     <section className="page">
@@ -34,9 +41,9 @@ export function ReportsPage() {
           </p>
         </div>
         <div className="page-actions">
-          <button className="button button--secondary" type="button">
+          <button className="button button--secondary" type="button" onClick={() => void loadOverview()}>
             <FilterIcon className="button__icon" />
-            Filter
+            Refresh
           </button>
           <button className="button button--primary" type="button" onClick={() => setIsExportConfirmOpen(true)}>
             <DownloadIcon className="button__icon" />
@@ -50,9 +57,13 @@ export function ReportsPage() {
           <div className="stat-card__head">
             <div>
               <p className="stat-card__label">Attendance Rate</p>
-              <div className="stat-card__value">91.2%</div>
+              <div className="stat-card__value">
+                {overview ? `${overview.reportsSummary.attendanceRate.toFixed(1)}%` : "--"}
+              </div>
             </div>
-            <span className="pill pill--success">+1.4%</span>
+            <span className="pill pill--success">
+              {overview ? `${overview.reportsSummary.attendanceRateDelta >= 0 ? "+" : ""}${overview.reportsSummary.attendanceRateDelta.toFixed(1)}%` : "--"}
+            </span>
           </div>
           <p className="stat-card__hint">Compared to last week</p>
         </article>
@@ -61,7 +72,9 @@ export function ReportsPage() {
           <div className="stat-card__head">
             <div>
               <p className="stat-card__label">Late Arrivals</p>
-              <div className="stat-card__value">38</div>
+              <div className="stat-card__value">
+                {overview ? overview.reportsSummary.lateArrivalsThisWeek.toLocaleString() : "--"}
+              </div>
             </div>
             <span className="pill pill--neutral">This week</span>
           </div>
@@ -70,6 +83,8 @@ export function ReportsPage() {
           </p>
         </article>
       </div>
+
+      {pageError ? <p className="login-card__error">{pageError}</p> : null}
 
       <div className="reports-layout">
         <section className="panel">
@@ -92,28 +107,38 @@ export function ReportsPage() {
               </tr>
             </thead>
             <tbody>
-              {absenceRows.map((row) => (
-                <tr key={row[1]}>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={4} className="page-subtitle">Loading reports...</td>
+                </tr>
+              ) : overview && overview.absenceBreakdown.length > 0 ? (
+                overview.absenceBreakdown.map((row) => (
+                <tr key={row.studentId}>
                   <td>
                     <div className="table-stack">
-                      <div className="person__name">{row[0]}</div>
-                      <div className="person__meta font-data">{row[1]}</div>
+                      <div className="person__name">{row.fullName}</div>
+                      <div className="person__meta font-data">{row.studentCode}</div>
                     </div>
                   </td>
                   <td>
-                    <span className="soft-badge">{row[2]}</span>
+                    <span className="soft-badge">{row.course}</span>
                   </td>
-                  <td>{row[3]}</td>
+                  <td>{row.absences}</td>
                   <td>
                     <div className="rate-cell">
                       <div className="mini-bar">
-                        <span style={{ width: `${row[4]}%` }} />
+                        <span style={{ width: `${row.attendanceRate}%` }} />
                       </div>
-                      <span className="rate-cell__value">{row[4]}%</span>
+                      <span className="rate-cell__value">{row.attendanceRate}%</span>
                     </div>
                   </td>
                 </tr>
-              ))}
+              ))
+              ) : (
+                <tr>
+                  <td colSpan={4} className="page-subtitle">No absence data found.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </section>
@@ -127,25 +152,33 @@ export function ReportsPage() {
           </div>
 
           <div className="course-list">
-            {courseStats.map((course) => (
-              <article className="course-card" key={course[0]}>
+            {isLoading ? (
+              <p className="page-subtitle">Loading course trends...</p>
+            ) : overview && overview.courseStats.length > 0 ? (
+              overview.courseStats.map((course) => (
+              <article className="course-card" key={course.course}>
                 <div className="course-card__top">
                   <div>
-                    <div className="course-card__name">{course[0]}</div>
-                    <div className="person__meta">{course[1]}</div>
+                    <div className="course-card__name">{course.course}</div>
+                    <div className="person__meta">
+                      {course.studentCount.toLocaleString()} {course.studentCount === 1 ? "student" : "students"}
+                    </div>
                   </div>
                   <div className="course-card__score">
-                    <span>{course[2]}</span>
-                    <span className={`trend trend--${course[3]}`}>
-                      {course[3] === "up" ? `↗ ${course[4]}` : `↘ ${course[4]}`}
+                    <span>{course.attendanceRate}%</span>
+                    <span className={`trend trend--${course.trendDirection}`}>
+                      {course.trendDirection === "up" ? `↗ ${course.trendDelta.toFixed(1)}` : `↘ ${course.trendDelta.toFixed(1)}`}
                     </span>
                   </div>
                 </div>
                 <div className="mini-bar mini-bar--full">
-                  <span style={{ width: course[2] }} />
+                  <span style={{ width: `${course.attendanceRate}%` }} />
                 </div>
               </article>
-            ))}
+            ))
+            ) : (
+              <p className="page-subtitle">No course data found.</p>
+            )}
           </div>
         </aside>
       </div>
