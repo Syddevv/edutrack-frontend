@@ -336,7 +336,8 @@ export function TeacherDashboardPage() {
                       0,
                       0,
                     );
-                    const totalMins = (classStart - midnight) / 60000;
+                    const totalMins =
+                      (classStart.getTime() - midnight.getTime()) / 60000;
                     const minsLeft = overview.nextClass.minutesRemaining;
                     let percent = 100;
                     if (totalMins > 0) {

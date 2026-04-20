@@ -7,8 +7,17 @@ import { ConfirmationDialog } from "../components/ConfirmationDialog";
 import { DownloadIcon, RefreshIcon } from "../components/Icons";
 import {
   getTeacherReports,
+  type TeacherReportClassSelection,
   type TeacherReportsOverview,
 } from "../teacherReports";
+import schoolLogoUrl from "../assets/bpc-logo-removebg-preview.png";
+import {
+  buildCsv,
+  downloadCsv,
+  formatFilenameDate,
+  SCHOOL_NAME,
+  type CsvCell,
+} from "../csvExport";
 
 type SummaryCard = {
   title: string;
@@ -41,12 +50,67 @@ function formatClass(selection: TeacherClassSelection) {
   return `${selection.course} • ${selection.year} - ${selection.section}`;
 }
 
+function formatCsvClass(selection: TeacherClassSelection) {
+  return `${selection.course} - ${selection.year} - ${selection.section}`;
+}
+
+function formatPercent(value: number) {
+  return `${value.toFixed(1)}%`;
+}
+
+function formatSignedPercent(value: number) {
+  return `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`;
+}
+
+function getSchoolLogoReference() {
+  return new URL(schoolLogoUrl, window.location.origin).href;
+}
+
+function buildTeacherReportsCsv(
+  overview: TeacherReportsOverview,
+  selectedClass: TeacherReportClassSelection | null,
+) {
+  const rows: CsvCell[][] = [
+    ["School Name", SCHOOL_NAME],
+    ["School Logo", getSchoolLogoReference()],
+    ["Report", "Class Report"],
+    ["Exported At", new Date().toLocaleString()],
+    [],
+    ["CLASS DETAILS"],
+    ["Course / Year / Section", selectedClass ? formatCsvClass(selectedClass) : "No class assigned"],
+    ["Subject", selectedClass?.subject ?? ""],
+    ["Schedule", selectedClass ? `${selectedClass.startTime} - ${selectedClass.endTime}` : ""],
+    ["Day", selectedClass?.dayOfWeek ?? ""],
+    [],
+    ["SUMMARY"],
+    ["Metric", "Value", "Details"],
+    [
+      "Class Attendance Rate",
+      formatPercent(overview.summary.attendanceRate),
+      `${formatSignedPercent(overview.summary.attendanceRateDelta)} vs last week`,
+    ],
+    ["Total Students", overview.summary.totalStudents, "Enrolled in section"],
+    [],
+    ["AT-RISK STUDENTS"],
+    ["Student ID", "Student Name", "Absences", "Attendance Rate"],
+    ...overview.atRiskStudents.map((student) => [
+      student.studentCode,
+      student.fullName,
+      student.absences,
+      formatPercent(student.attendanceRate),
+    ]),
+  ];
+
+  return buildCsv(rows);
+}
+
 export function TeacherReportsPage() {
   const [isExportConfirmOpen, setIsExportConfirmOpen] = useState(false);
   const [isChangeClassOpen, setIsChangeClassOpen] = useState(false);
   const [overview, setOverview] = useState<TeacherReportsOverview | null>(null);
   const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [pageError, setPageError] = useState("");
 
   useEffect(() => {
@@ -83,6 +147,35 @@ export function TeacherReportsPage() {
       ) ?? null,
     [overview],
   );
+
+  async function handleExportCsv() {
+    if (isExporting) {
+      return;
+    }
+
+    setIsExporting(true);
+    setPageError("");
+
+    try {
+      const exportOverview =
+        overview ?? (await getTeacherReports(selectedClassId ?? undefined));
+      const exportClass =
+        exportOverview.assignments.find(
+          (assignment) => assignment.classId === exportOverview.selectedClassId,
+        ) ?? null;
+      const csv = buildTeacherReportsCsv(exportOverview, exportClass);
+      downloadCsv(csv, `class-report-${formatFilenameDate(new Date())}.csv`);
+      setIsExportConfirmOpen(false);
+    } catch (error) {
+      setPageError(
+        error instanceof Error
+          ? error.message
+          : "Failed to export class report.",
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   const summaryCards = useMemo<SummaryCard[]>(() => {
     if (!overview) {
@@ -264,9 +357,9 @@ export function TeacherReportsPage() {
         isOpen={isExportConfirmOpen}
         title="Export Class Report CSV"
         message="Export the current class report as a CSV file?"
-        confirmLabel="Export CSV"
+        confirmLabel={isExporting ? "Exporting..." : "Export CSV"}
         onCancel={() => setIsExportConfirmOpen(false)}
-        onConfirm={() => setIsExportConfirmOpen(false)}
+        onConfirm={() => void handleExportCsv()}
       />
     </section>
   );

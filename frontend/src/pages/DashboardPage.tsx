@@ -10,8 +10,11 @@ import {
   XCircleIcon,
 } from "../components/Icons";
 import { getDashboardOverview, type DashboardOverview } from "../dashboard";
+import schoolLogoUrl from "../assets/bpc-logo-removebg-preview.png";
+import { getStudents, type StudentRecord } from "../students";
 
 const DASHBOARD_ROWS_PER_PAGE = 10;
+const SCHOOL_NAME = "Bulacan Polytechnic College";
 
 function getStatusTone(status: DashboardOverview["rows"][number]["status"]) {
   if (status === "No Record") {
@@ -21,12 +24,65 @@ function getStatusTone(status: DashboardOverview["rows"][number]["status"]) {
   return status.toLowerCase();
 }
 
+function escapeCsvCell(value: string | number | null | undefined) {
+  const stringValue = value === null || value === undefined ? "" : String(value);
+
+  if (/[",\r\n]/.test(stringValue)) {
+    return `"${stringValue.replace(/"/g, '""')}"`;
+  }
+
+  return stringValue;
+}
+
+function getSchoolLogoReference() {
+  return new URL(schoolLogoUrl, window.location.origin).href;
+}
+
+function formatFilenameDate(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function buildStudentsCsv(students: StudentRecord[]) {
+  const generatedAt = new Date();
+  const rows: Array<Array<string | number>> = [
+    ["School Name", SCHOOL_NAME],
+    ["School Logo", getSchoolLogoReference()],
+    ["Generated At", generatedAt.toLocaleString()],
+    [],
+    ["Student Name", "Course", "Year", "Section"],
+    ...students.map((student) => [
+      student.fullName,
+      student.course.code || student.course.name,
+      student.yearLevel.name,
+      student.section.name,
+    ]),
+  ];
+
+  return `\uFEFF${rows
+    .map((row) => row.map((cell) => escapeCsvCell(cell)).join(","))
+    .join("\r\n")}`;
+}
+
+function downloadCsv(content: string, filename: string) {
+  const blob = new Blob([content], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 export function DashboardPage() {
   const [isExportConfirmOpen, setIsExportConfirmOpen] = useState(false);
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [pageError, setPageError] = useState("");
 
   useEffect(() => {
@@ -46,6 +102,24 @@ export function DashboardPage() {
       );
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function handleExportStudentsCsv() {
+    setIsExporting(true);
+    setPageError("");
+
+    try {
+      const response = await getStudents();
+      const csv = buildStudentsCsv(response.students);
+      downloadCsv(csv, `students-${formatFilenameDate(new Date())}.csv`);
+      setIsExportConfirmOpen(false);
+    } catch (error) {
+      setPageError(
+        error instanceof Error ? error.message : "Failed to export students.",
+      );
+    } finally {
+      setIsExporting(false);
     }
   }
 
@@ -252,11 +326,11 @@ export function DashboardPage() {
       </section>
       <ConfirmationDialog
         isOpen={isExportConfirmOpen}
-        title="Export Attendance CSV"
-        message="Export the current attendance overview as a CSV file?"
-        confirmLabel="Close"
+        title="Export Students CSV"
+        message="Export the complete student list with name, course, year, and section?"
+        confirmLabel={isExporting ? "Exporting..." : "Export CSV"}
         onCancel={() => setIsExportConfirmOpen(false)}
-        onConfirm={() => setIsExportConfirmOpen(false)}
+        onConfirm={() => void handleExportStudentsCsv()}
       />
     </section>
   );

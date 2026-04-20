@@ -2,11 +2,83 @@ import { useEffect, useState } from "react";
 import { ConfirmationDialog } from "../components/ConfirmationDialog";
 import { getReportsOverview, type ReportsOverview } from "../reports";
 import { DownloadIcon, RefreshIcon } from "../components/Icons";
+import schoolLogoUrl from "../assets/bpc-logo-removebg-preview.png";
+import {
+  buildCsv,
+  downloadCsv,
+  formatFilenameDate,
+  SCHOOL_NAME,
+  type CsvCell,
+} from "../csvExport";
+
+function formatPercent(value: number) {
+  return `${value.toFixed(1)}%`;
+}
+
+function formatSignedPercent(value: number) {
+  return `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`;
+}
+
+function getSchoolLogoReference() {
+  return new URL(schoolLogoUrl, window.location.origin).href;
+}
+
+function buildReportsCsv(overview: ReportsOverview) {
+  const rows: CsvCell[][] = [
+    ["School Name", SCHOOL_NAME],
+    ["School Logo", getSchoolLogoReference()],
+    ["Report", "Reports Overview"],
+    ["Generated At", overview.generatedAt],
+    ["Exported At", new Date().toLocaleString()],
+    [],
+    ["SUMMARY"],
+    ["Metric", "Value", "Details"],
+    [
+      "Attendance Rate",
+      formatPercent(overview.reportsSummary.attendanceRate),
+      `${formatSignedPercent(overview.reportsSummary.attendanceRateDelta)} vs last week`,
+    ],
+    [
+      "Late Arrivals",
+      overview.reportsSummary.lateArrivalsThisWeek,
+      "This week",
+    ],
+    [],
+    ["TOP ABSENCE BREAKDOWN"],
+    ["Student ID", "Student Name", "Course", "Absences", "Attendance Rate"],
+    ...overview.absenceBreakdown.map((row) => [
+      row.studentCode,
+      row.fullName,
+      row.course,
+      row.absences,
+      formatPercent(row.attendanceRate),
+    ]),
+    [],
+    ["COURSE PERFORMANCE"],
+    [
+      "Course",
+      "Students",
+      "Attendance Rate",
+      "Trend Direction",
+      "Trend Change",
+    ],
+    ...overview.courseStats.map((course) => [
+      course.course,
+      course.studentCount,
+      formatPercent(course.attendanceRate),
+      course.trendDirection === "up" ? "Up" : "Down",
+      formatPercent(course.trendDelta),
+    ]),
+  ];
+
+  return buildCsv(rows);
+}
 
 export function ReportsPage() {
   const [isExportConfirmOpen, setIsExportConfirmOpen] = useState(false);
   const [overview, setOverview] = useState<ReportsOverview | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [pageError, setPageError] = useState("");
 
   useEffect(() => {
@@ -26,6 +98,28 @@ export function ReportsPage() {
       );
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function handleExportCsv() {
+    if (isExporting) {
+      return;
+    }
+
+    setIsExporting(true);
+    setPageError("");
+
+    try {
+      const exportOverview = overview ?? (await getReportsOverview());
+      const csv = buildReportsCsv(exportOverview);
+      downloadCsv(csv, `reports-overview-${formatFilenameDate(new Date())}.csv`);
+      setIsExportConfirmOpen(false);
+    } catch (error) {
+      setPageError(
+        error instanceof Error ? error.message : "Failed to export reports.",
+      );
+    } finally {
+      setIsExporting(false);
     }
   }
 
@@ -211,9 +305,9 @@ export function ReportsPage() {
         isOpen={isExportConfirmOpen}
         title="Export Reports CSV"
         message="Export this reports overview as a CSV file?"
-        confirmLabel="Export CSV"
+        confirmLabel={isExporting ? "Exporting..." : "Export CSV"}
         onCancel={() => setIsExportConfirmOpen(false)}
-        onConfirm={() => setIsExportConfirmOpen(false)}
+        onConfirm={() => void handleExportCsv()}
       />
     </section>
   );
