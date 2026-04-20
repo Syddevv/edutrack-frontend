@@ -157,6 +157,7 @@ export function AppShell({
       <ChatbotPanel
         isEnabled={settings.aiInsightsEnabled}
         isOpen={isChatbotOpen}
+        role={variant}
         onClose={() => setIsChatbotOpen(false)}
         onOpen={() => {
           if (settings.aiInsightsEnabled) {

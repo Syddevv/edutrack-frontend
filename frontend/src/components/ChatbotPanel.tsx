@@ -1,3 +1,9 @@
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  askEduTrackAssistant,
+  type AssistantMessage,
+  type AssistantRole,
+} from "../assistant";
 import { ChatbotIcon, CloseIcon, SendIcon } from "./Icons";
 
 type ChatbotPanelProps = {
@@ -5,20 +11,229 @@ type ChatbotPanelProps = {
   isOpen: boolean;
   onClose: () => void;
   onOpen: () => void;
+  role?: AssistantRole;
 };
 
-const absentStudents = [
-  ["Sarah Jenkins", "Sick Leave"],
-  ["Noah Brown", "Family Emergency"],
-  ["Lia Santos", "Medical Appointment"],
-] as const;
+type ChatMessage = AssistantMessage & {
+  id: string;
+};
+
+const adminSuggestions = [
+  {
+    label: "Today summary",
+    prompt: "Summarize today's attendance across all students.",
+  },
+  {
+    label: "Absent today",
+    prompt:
+      "List students marked absent today and group them by course and section.",
+  },
+  {
+    label: "Weekly report",
+    prompt: "Give me a weekly attendance report summary.",
+  },
+  {
+    label: "Course risks",
+    prompt: "Which courses have attendance issues?",
+  },
+];
+
+const teacherSuggestions = [
+  {
+    label: "Class summary",
+    prompt: "Summarize my current class attendance.",
+  },
+  {
+    label: "Absent/unmarked",
+    prompt: "Who is absent or unmarked today?",
+  },
+  {
+    label: "At-risk list",
+    prompt: "List at-risk students and next steps.",
+  },
+  {
+    label: "Class advice",
+    prompt: "Suggest practical ways to improve attendance for my class.",
+  },
+];
+
+function createMessage(
+  role: AssistantMessage["role"],
+  content: string,
+): ChatMessage {
+  return {
+    id:
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random()}`,
+    role,
+    content,
+  };
+}
+
+function getInitialMessages(role: AssistantRole): ChatMessage[] {
+  const skills =
+    role === "teacher"
+      ? "I can summarize your class attendance, find absent or unmarked students, explain at-risk reports, and draft follow-up notes."
+      : "I can summarize campus attendance, explain weekly reports, find students needing follow-up, and draft report notes.";
+
+  return [
+    createMessage(
+      "assistant",
+      `Hello. I'm your EduTrack AI assistant. ${skills}`,
+    ),
+  ];
+}
+
+function renderInlineMarkdown(text: string) {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={`${part}-${index}`}>{part.slice(2, -2)}</strong>;
+    }
+
+    return <Fragment key={`${part}-${index}`}>{part}</Fragment>;
+  });
+}
+
+function renderMessageContent(content: string) {
+  const blocks: ReactNode[] = [];
+  const lines = content.replace(/\r\n/g, "\n").split("\n");
+  let paragraph: string[] = [];
+  let bullets: string[] = [];
+
+  function flushParagraph() {
+    if (paragraph.length === 0) {
+      return;
+    }
+
+    const text = paragraph.join(" ").trim();
+    if (text !== "") {
+      blocks.push(
+        <p className="chatbot-bubble__paragraph" key={`p-${blocks.length}`}>
+          {renderInlineMarkdown(text)}
+        </p>,
+      );
+    }
+
+    paragraph = [];
+  }
+
+  function flushBullets() {
+    if (bullets.length === 0) {
+      return;
+    }
+
+    blocks.push(
+      <ul className="chatbot-bubble__list" key={`ul-${blocks.length}`}>
+        {bullets.map((bullet, index) => (
+          <li key={`${bullet}-${index}`}>{renderInlineMarkdown(bullet)}</li>
+        ))}
+      </ul>,
+    );
+
+    bullets = [];
+  }
+
+  lines.forEach((line) => {
+    const trimmedLine = line.trim();
+
+    if (trimmedLine === "") {
+      flushParagraph();
+      flushBullets();
+      return;
+    }
+
+    const bullet = trimmedLine.match(/^[-*]\s+(.+)$/);
+    if (bullet) {
+      flushParagraph();
+      bullets.push(bullet[1]);
+      return;
+    }
+
+    flushBullets();
+    paragraph.push(trimmedLine);
+  });
+
+  flushParagraph();
+  flushBullets();
+
+  return blocks.length > 0 ? blocks : renderInlineMarkdown(content);
+}
 
 export function ChatbotPanel({
   isEnabled,
   isOpen,
   onClose,
   onOpen,
+  role = "admin",
 }: ChatbotPanelProps) {
+  const [messages, setMessages] = useState<ChatMessage[]>(() =>
+    getInitialMessages(role),
+  );
+  const [inputValue, setInputValue] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const bodyRef = useRef<HTMLDivElement | null>(null);
+  const suggestions =
+    role === "teacher" ? teacherSuggestions : adminSuggestions;
+
+  useEffect(() => {
+    setMessages(getInitialMessages(role));
+    setInputValue("");
+  }, [role]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const body = bodyRef.current;
+    if (body) {
+      body.scrollTop = body.scrollHeight;
+    }
+  }, [isOpen, isSending, messages]);
+
+  async function sendMessage(messageText = inputValue) {
+    const trimmedMessage = messageText.trim();
+
+    if (trimmedMessage === "" || isSending) {
+      return;
+    }
+
+    const userMessage = createMessage("user", trimmedMessage);
+    const nextMessages = [...messages, userMessage];
+
+    setMessages(nextMessages);
+    setInputValue("");
+    setIsSending(true);
+
+    try {
+      const assistantResponse = await askEduTrackAssistant(
+        nextMessages.map(({ role: messageRole, content }) => ({
+          role: messageRole,
+          content,
+        })),
+        role,
+      );
+
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        createMessage("assistant", assistantResponse),
+      ]);
+    } catch (error) {
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        createMessage(
+          "assistant",
+          error instanceof Error
+            ? error.message
+            : "I could not contact the AI assistant. Please try again.",
+        ),
+      ]);
+    } finally {
+      setIsSending(false);
+    }
+  }
+
   return (
     <>
       {isOpen ? (
@@ -50,9 +265,14 @@ export function ChatbotPanel({
                 <ChatbotIcon className="chatbot-panel__avatar-icon" />
               </span>
               <div>
-                <h2 className="chatbot-panel__title">AI Assistant</h2>
+                <div className="chatbot-panel__title-row">
+                  <h2 className="chatbot-panel__title">AI Assistant</h2>
+                  <span className="chatbot-panel__model">Gemini 2.5</span>
+                </div>
                 <p className="chatbot-panel__subtitle">
-                  Attendance insights &amp; help
+                  {role === "teacher"
+                    ? "Class insights & help"
+                    : "Attendance insights & help"}
                 </p>
               </div>
             </div>
@@ -67,75 +287,88 @@ export function ChatbotPanel({
             </button>
           </header>
 
-          <div className="chatbot-panel__body">
-            <div className="chatbot-message-row chatbot-message-row--assistant">
-              <span className="chatbot-message-row__badge">
-                <ChatbotIcon className="chatbot-message-row__badge-icon" />
-              </span>
-              <div className="chatbot-bubble chatbot-bubble--assistant">
-                <p>
-                  Hello! I&apos;m your AI attendance assistant. I can help you
-                  with:
-                </p>
-                <ul className="chatbot-bullet-list">
-                  <li>View attendance records</li>
-                  <li>Analyze attendance trends</li>
-                  <li>Generate reports</li>
-                  <li>Find absent students</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="chatbot-message-row chatbot-message-row--user">
-              <div className="chatbot-bubble chatbot-bubble--user">
-                Who was absent from Grade 5B yesterday?
-              </div>
-              <span className="chatbot-message-row__user-badge">U</span>
-            </div>
-
-            <div className="chatbot-message-row chatbot-message-row--assistant">
-              <span className="chatbot-message-row__badge">
-                <ChatbotIcon className="chatbot-message-row__badge-icon" />
-              </span>
-              <div className="chatbot-bubble chatbot-bubble--assistant">
-                <p>Here are the absent students from Grade 5B:</p>
-                <div className="chatbot-table">
-                  <div className="chatbot-table__head">
-                    <span>Student</span>
-                    <span>Reason</span>
-                  </div>
-                  {absentStudents.map((student) => (
-                    <div className="chatbot-table__row" key={student[0]}>
-                      <span>{student[0]}</span>
-                      <span>{student[1]}</span>
+          <div className="chatbot-panel__body" ref={bodyRef}>
+            {messages.map((message) =>
+              message.role === "assistant" ? (
+                <div
+                  className="chatbot-message-row chatbot-message-row--assistant"
+                  key={message.id}
+                >
+                  <span className="chatbot-message-row__badge">
+                    <ChatbotIcon className="chatbot-message-row__badge-icon" />
+                  </span>
+                  <div className="chatbot-bubble chatbot-bubble--assistant">
+                    <div className="chatbot-bubble__text">
+                      {renderMessageContent(message.content)}
                     </div>
-                  ))}
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className="chatbot-message-row chatbot-message-row--user"
+                  key={message.id}
+                >
+                  <div className="chatbot-bubble chatbot-bubble--user">
+                    <div className="chatbot-bubble__text">
+                      {renderMessageContent(message.content)}
+                    </div>
+                  </div>
+                  <span className="chatbot-message-row__user-badge">U</span>
+                </div>
+              ),
+            )}
+            {isSending ? (
+              <div className="chatbot-message-row chatbot-message-row--assistant">
+                <span className="chatbot-message-row__badge">
+                  <ChatbotIcon className="chatbot-message-row__badge-icon" />
+                </span>
+                <div className="chatbot-bubble chatbot-bubble--assistant">
+                  <div className="chatbot-panel__status">
+                    Checking EduTrack data...
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : null}
           </div>
 
           <div className="chatbot-panel__suggestions">
-            <button className="chatbot-chip" type="button">
-              Absent today
-            </button>
-            <button className="chatbot-chip" type="button">
-              Weekly summary
-            </button>
+            {suggestions.map((suggestion) => (
+              <button
+                className="chatbot-chip"
+                type="button"
+                key={suggestion.label}
+                onClick={() => void sendMessage(suggestion.prompt)}
+                disabled={isSending}
+              >
+                {suggestion.label}
+              </button>
+            ))}
           </div>
 
           <footer className="chatbot-panel__composer">
-            <label className="chatbot-composer">
-              <input type="text" placeholder="Ask about attendance..." />
-
+            <form
+              className="chatbot-composer"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void sendMessage();
+              }}
+            >
+              <input
+                type="text"
+                placeholder="Ask about attendance..."
+                value={inputValue}
+                onChange={(event) => setInputValue(event.target.value)}
+                disabled={isSending}
+              />
               <button
                 className="chatbot-composer__send"
-                type="button"
+                type="submit"
                 aria-label="Send message"
+                disabled={isSending || inputValue.trim() === ""}
               >
                 <SendIcon className="chatbot-composer__icon-svg" />
               </button>
-            </label>
+            </form>
           </footer>
         </aside>
       ) : null}
