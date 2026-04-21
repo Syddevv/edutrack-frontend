@@ -122,13 +122,15 @@ function App() {
     email,
     password,
     expectedRole,
+    rememberMe,
   }: {
     email: string;
     password: string;
     expectedRole: "admin" | "teacher";
+    rememberMe: boolean;
   }) => {
     try {
-      const user = await login(email, password);
+      const user = await login(email, password, rememberMe);
       const actualRole = normalizeRole(user.role);
 
       if (actualRole !== expectedRole) {
@@ -223,7 +225,7 @@ function App() {
           onLogout={handleLogout}
           variant="teacher"
         >
-          <TeacherDashboardPage />
+          <TeacherDashboardPage teacherName={authUser?.name} />
         </AppShell>
       );
     case "attendance":

@@ -41,10 +41,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (payload.user ?? payload) as T;
 }
 
-export async function login(email: string, password: string): Promise<AuthUser> {
+export async function login(
+  email: string,
+  password: string,
+  rememberMe = false,
+): Promise<AuthUser> {
   return request<AuthUser>("/login.php", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, rememberMe }),
   });
 }
 

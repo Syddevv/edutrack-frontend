@@ -68,7 +68,13 @@ function SparkIcon() {
   );
 }
 
-export function TeacherDashboardPage() {
+type TeacherDashboardPageProps = {
+  teacherName?: string;
+};
+
+export function TeacherDashboardPage({
+  teacherName,
+}: TeacherDashboardPageProps) {
   const [overview, setOverview] = useState<TeacherDashboardOverview | null>(
     null,
   );
@@ -160,6 +166,7 @@ export function TeacherDashboardPage() {
             Dashboard
           </h1>
           <p className="page-subtitle">
+            {teacherName ? `${teacherName} • ` : ""}
             {overview?.attendanceDateLabel
               ? `Overview based on ${overview.attendanceDateLabel}`
               : `Overview for ${overview?.dateLabel ?? ""}`}

@@ -7,6 +7,7 @@ type LoginPageProps = {
     email: string;
     password: string;
     expectedRole: "admin" | "teacher";
+    rememberMe: boolean;
   }) => Promise<string | null>;
 };
 
@@ -17,6 +18,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [notice, setNotice] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   async function handleLogin(expectedRole: "admin" | "teacher") {
     setIsSubmitting(true);
@@ -27,6 +29,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       email,
       password,
       expectedRole,
+      rememberMe,
     });
 
     setError(nextError);
@@ -78,7 +81,11 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
             <div className="login-card__meta">
               <label className="checkbox">
-                <input type="checkbox" />
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(event) => setRememberMe(event.target.checked)}
+                />
                 <span>Keep me logged in</span>
               </label>
               <button
@@ -113,13 +120,6 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               </button>
             </div>
           </div>
-
-          <p className="login-card__footer">
-            Don&apos;t have an account?{" "}
-            <button className="link-button link-button--inline" type="button">
-              Contact Support
-            </button>
-          </p>
         </div>
       </div>
 
