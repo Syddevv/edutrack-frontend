@@ -25,7 +25,8 @@ function getStatusTone(status: DashboardOverview["rows"][number]["status"]) {
 }
 
 function escapeCsvCell(value: string | number | null | undefined) {
-  const stringValue = value === null || value === undefined ? "" : String(value);
+  const stringValue =
+    value === null || value === undefined ? "" : String(value);
 
   if (/[",\r\n]/.test(stringValue)) {
     return `"${stringValue.replace(/"/g, '""')}"`;

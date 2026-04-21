@@ -319,7 +319,7 @@ export function StudentsPage() {
                   <th>COURSE</th>
                   <th>YEAR</th>
                   <th>SECTION</th>
-                  <th>STATUS</th>
+                  <th>LATEST STATUS</th>
                   <th>ACTIONS</th>
                 </tr>
               </thead>

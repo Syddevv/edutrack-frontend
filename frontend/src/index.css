@@ -31,6 +31,10 @@
   --warning: #f59e0b;
   --warning-bg: #fff7e8;
   --neutral-bg: #f4f4f4;
+  --motion-base: 220ms;
+  --motion-slow: 360ms;
+  --motion-bounce: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 * {
@@ -57,7 +61,9 @@ a {
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
 }
 
@@ -86,6 +92,9 @@ input {
   height: 100vh;
   border-right: 1px solid var(--line);
   background: #fff;
+  transition:
+    background-color var(--motion-base) var(--motion-smooth),
+    border-color var(--motion-base) var(--motion-smooth);
 }
 
 .sidebar__brand,
@@ -105,6 +114,10 @@ input {
   color: var(--text-soft);
   background: transparent;
   cursor: pointer;
+  transition:
+    color var(--motion-base) var(--motion-smooth),
+    background-color var(--motion-base) var(--motion-smooth),
+    transform var(--motion-base) var(--motion-bounce);
 }
 
 .brand-mark {
@@ -117,6 +130,9 @@ input {
   justify-content: center;
   color: #fff;
   flex: 0 0 auto;
+  transition:
+    transform var(--motion-base) var(--motion-bounce),
+    box-shadow var(--motion-base) var(--motion-smooth);
 }
 
 .brand-mark__icon,
@@ -158,11 +174,17 @@ input {
   font-weight: 600;
   cursor: pointer;
   text-align: left;
+  transition:
+    transform var(--motion-base) var(--motion-bounce),
+    background-color var(--motion-base) var(--motion-smooth),
+    color var(--motion-base) var(--motion-smooth),
+    box-shadow var(--motion-base) var(--motion-smooth);
 }
 
 .nav__item--active {
   background: #171717;
   color: #fff;
+  box-shadow: 0 12px 26px rgba(17, 24, 39, 0.14);
 }
 
 .app-shell__content {
@@ -172,10 +194,37 @@ input {
   background: #fff;
 }
 
+.page-transition-shell {
+  min-height: 100%;
+}
+
+.page-transition-shell > * {
+  animation: route-fade-in var(--motion-slow) var(--motion-bounce) both;
+}
+
 .page {
   padding: 24px 26px 28px;
   min-height: 100%;
   position: relative;
+}
+
+.page > *,
+.teacher-attendance-scroll > *,
+.teacher-reports-page > *,
+.login-screen > * {
+  animation: surface-rise 480ms var(--motion-bounce) both;
+}
+
+.page > *:nth-child(2),
+.teacher-attendance-scroll > *:nth-child(2),
+.teacher-reports-page > *:nth-child(2) {
+  animation-delay: 50ms;
+}
+
+.page > *:nth-child(3),
+.teacher-attendance-scroll > *:nth-child(3),
+.teacher-reports-page > *:nth-child(3) {
+  animation-delay: 95ms;
 }
 
 .page__topbar {
@@ -262,6 +311,10 @@ input {
   background: var(--panel);
   padding: 20px;
   box-shadow: var(--shadow);
+  transition:
+    transform var(--motion-base) var(--motion-bounce),
+    box-shadow var(--motion-base) var(--motion-smooth),
+    border-color var(--motion-base) var(--motion-smooth);
 }
 
 .stat-card--compact {
@@ -284,6 +337,10 @@ input {
   align-items: center;
   justify-content: center;
   color: #8d929c;
+  transition:
+    transform var(--motion-base) var(--motion-bounce),
+    background-color var(--motion-base) var(--motion-smooth),
+    color var(--motion-base) var(--motion-smooth);
 }
 
 .stat-card__label {
@@ -318,6 +375,10 @@ input {
   background: #fff;
   box-shadow: var(--shadow);
   overflow: hidden;
+  transition:
+    transform var(--motion-base) var(--motion-bounce),
+    box-shadow var(--motion-base) var(--motion-smooth),
+    border-color var(--motion-base) var(--motion-smooth);
 }
 
 .panel--toolbar {
@@ -384,6 +445,11 @@ input {
   border: 1px solid var(--line-strong);
   border-radius: 12px;
   background: #fff;
+  transition:
+    border-color var(--motion-base) var(--motion-smooth),
+    box-shadow var(--motion-base) var(--motion-smooth),
+    background-color var(--motion-base) var(--motion-smooth),
+    transform var(--motion-base) var(--motion-bounce);
 }
 
 .search-field {
@@ -440,6 +506,12 @@ input {
   justify-content: center;
   gap: 8px;
   font-weight: 700;
+  transition:
+    transform var(--motion-base) var(--motion-bounce),
+    box-shadow var(--motion-base) var(--motion-smooth),
+    background-color var(--motion-base) var(--motion-smooth),
+    border-color var(--motion-base) var(--motion-smooth),
+    color var(--motion-base) var(--motion-smooth);
 }
 
 .button--primary {
@@ -584,6 +656,12 @@ input {
 .data-table {
   width: 100%;
   border-collapse: collapse;
+}
+
+.data-table tbody tr {
+  transition:
+    background-color var(--motion-base) var(--motion-smooth),
+    box-shadow var(--motion-base) var(--motion-smooth);
 }
 
 .data-table th {
@@ -779,6 +857,9 @@ input {
   text-decoration: none;
   font-size: 14px;
   font-weight: 600;
+  transition:
+    color var(--motion-base) var(--motion-smooth),
+    transform var(--motion-base) var(--motion-bounce);
 }
 
 .teacher-dashboard-table th {
@@ -1228,6 +1309,10 @@ input {
   background: transparent;
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.22);
+  transition:
+    transform var(--motion-base) var(--motion-bounce),
+    box-shadow var(--motion-base) var(--motion-smooth),
+    border-color var(--motion-base) var(--motion-smooth);
 }
 
 .teacher-attendance-page {
@@ -1292,6 +1377,10 @@ input {
   background: #fff;
   color: #111827;
   font-size: 15px;
+  transition:
+    border-color var(--motion-base) var(--motion-smooth),
+    box-shadow var(--motion-base) var(--motion-smooth),
+    transform var(--motion-base) var(--motion-bounce);
 }
 
 .teacher-attendance-select {
@@ -1341,6 +1430,10 @@ input {
   background: #fff;
   padding: 14px 16px;
   box-shadow: var(--shadow);
+  transition:
+    transform var(--motion-base) var(--motion-bounce),
+    box-shadow var(--motion-base) var(--motion-smooth),
+    border-color var(--motion-base) var(--motion-smooth);
 }
 
 .teacher-attendance-summary-card__icon {
@@ -1472,6 +1565,11 @@ input {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  transition:
+    transform var(--motion-base) var(--motion-bounce),
+    box-shadow var(--motion-base) var(--motion-smooth),
+    background-color var(--motion-base) var(--motion-smooth),
+    color var(--motion-base) var(--motion-smooth);
 }
 
 .teacher-attendance-segmented__button--present {
@@ -1559,6 +1657,10 @@ input {
   align-items: center;
   font-size: 14px;
   font-weight: 700;
+  transition:
+    transform var(--motion-base) var(--motion-bounce),
+    box-shadow var(--motion-base) var(--motion-smooth),
+    border-color var(--motion-base) var(--motion-smooth);
 }
 
 .teacher-reports-actions {
@@ -1580,6 +1682,10 @@ input {
 
 .teacher-reports-stat {
   min-height: 122px;
+  transition:
+    transform var(--motion-base) var(--motion-bounce),
+    box-shadow var(--motion-base) var(--motion-smooth),
+    border-color var(--motion-base) var(--motion-smooth);
 }
 
 .teacher-reports-stat__label {
@@ -1935,6 +2041,10 @@ input {
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 12px;
+  transition:
+    transform var(--motion-base) var(--motion-bounce),
+    box-shadow var(--motion-base) var(--motion-smooth),
+    border-color var(--motion-base) var(--motion-smooth);
 }
 
 .course-card__top,
@@ -2024,6 +2134,10 @@ input {
 
 .settings-card {
   padding-bottom: 18px;
+  transition:
+    transform var(--motion-base) var(--motion-bounce),
+    box-shadow var(--motion-base) var(--motion-smooth),
+    border-color var(--motion-base) var(--motion-smooth);
 }
 
 .settings-card--wide {
@@ -3011,6 +3125,10 @@ input {
   background-color: #fff;
   box-shadow: 0 16px 36px rgba(15, 23, 42, 0.14);
   padding: 40px 32px 34px;
+  transition:
+    transform var(--motion-slow) var(--motion-bounce),
+    box-shadow var(--motion-base) var(--motion-smooth),
+    border-color var(--motion-base) var(--motion-smooth);
 }
 
 .login-card__logo {
@@ -3147,6 +3265,126 @@ input {
   background: linear-gradient(180deg, rgba(250, 249, 247, 0.98), #ffffff 24%);
   box-shadow: 0 28px 80px rgba(15, 23, 42, 0.26);
   padding: 24px;
+  animation: modal-rise var(--motion-slow) var(--motion-bounce) both;
+}
+
+@media (hover: hover) {
+  .brand-mark:hover {
+    transform: translateY(-1px) scale(1.03);
+    box-shadow: 0 10px 22px rgba(17, 24, 39, 0.16);
+  }
+
+  .nav__item:hover:not(.nav__item--active) {
+    background: #f7f5f1;
+    color: #1f2937;
+    transform: translateX(3px);
+  }
+
+  .sidebar__logout:hover {
+    background: #faf9f7;
+    color: #1f2937;
+    transform: translateX(3px);
+  }
+
+  .button:hover:not(:disabled),
+  .icon-button:hover:not(:disabled),
+  .count-pill:hover,
+  .teacher-reports-chip:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(17, 24, 39, 0.1);
+  }
+
+  .button--primary:hover:not(:disabled) {
+    box-shadow: 0 14px 28px rgba(17, 24, 39, 0.18);
+  }
+
+  .button--secondary:hover:not(:disabled) {
+    background: #fafaf9;
+    border-color: #d8d2c8;
+  }
+
+  .search-field:hover,
+  .field__input:hover,
+  .teacher-attendance-select:hover,
+  .teacher-attendance-date-field:hover {
+    border-color: #d7d1c7;
+  }
+
+  .stat-card:hover,
+  .panel:hover,
+  .course-card:hover,
+  .settings-card:hover,
+  .teacher-attendance-summary-card:hover,
+  .teacher-reports-stat:hover,
+  .teacher-dashboard-alert:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 34px rgba(15, 23, 42, 0.1);
+    border-color: #dfd8cf;
+  }
+
+  .teacher-dashboard-link:hover {
+    color: #171717;
+    transform: translateX(2px);
+  }
+
+  .data-table tbody tr:hover {
+    background: #fbfaf7;
+  }
+
+  .floating-button:hover:not(:disabled) {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 18px 34px rgba(15, 23, 42, 0.18);
+  }
+
+  .login-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 22px 46px rgba(15, 23, 42, 0.16);
+  }
+}
+
+@keyframes route-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes surface-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes modal-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 .auth-modal__header {

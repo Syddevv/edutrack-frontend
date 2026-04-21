@@ -139,7 +139,11 @@ export function AppShell({
         </button>
       </aside>
 
-      <main className="app-shell__content">{children}</main>
+      <main className="app-shell__content">
+        <div className="page-transition-shell" key={activeRoute}>
+          {children}
+        </div>
+      </main>
       <ConfirmationDialog
         isOpen={isLogoutConfirmOpen}
         title="Log Out"
