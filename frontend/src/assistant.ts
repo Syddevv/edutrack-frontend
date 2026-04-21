@@ -277,9 +277,9 @@ async function buildTeacherContext() {
       ...classReports,
       ...classAttendance,
     ].map((source) =>
-        source.status === "available"
-          ? { label: source.label, status: source.status }
-          : source,
+      source.status === "available"
+        ? { label: source.label, status: source.status }
+        : source,
     ),
   };
 
