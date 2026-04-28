@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "./api";
+
 export type AttendanceStatus = "Present" | "Late" | "Absent";
 
 export type TeacherAttendanceAssignment = {
@@ -49,7 +51,7 @@ type ApiEnvelope<T> = T & {
   message?: string;
 };
 
-const TEACHER_ATTENDANCE_API_BASE = "http://localhost/edutrack-backend/api/teachers";
+const TEACHER_ATTENDANCE_API_BASE = `${API_BASE_URL}/teachers`;
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${TEACHER_ATTENDANCE_API_BASE}${path}`, {

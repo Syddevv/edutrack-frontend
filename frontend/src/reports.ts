@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "./api";
+
 type ApiEnvelope<T> = T & {
   message?: string;
 };
@@ -32,7 +34,7 @@ export type ReportsOverview = {
   generatedAt: string;
 };
 
-const REPORTS_API_BASE = "http://localhost/edutrack-backend/api/reports";
+const REPORTS_API_BASE = `${API_BASE_URL}/reports`;
 
 export async function getReportsOverview(): Promise<ReportsOverview> {
   const response = await fetch(`${REPORTS_API_BASE}/overview.php`, {

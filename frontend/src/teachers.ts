@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "./api";
+
 export type TeacherStatus = "Active" | "On Leave" | "Inactive";
 
 export type TeacherLookupOption = {
@@ -79,7 +81,7 @@ export type UpdateTeacherInput = {
   assignedClasses: TeacherAssignedClassPayload[];
 };
 
-const TEACHERS_API_BASE = "http://localhost/edutrack-backend/api/teachers";
+const TEACHERS_API_BASE = `${API_BASE_URL}/teachers`;
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${TEACHERS_API_BASE}${path}`, {

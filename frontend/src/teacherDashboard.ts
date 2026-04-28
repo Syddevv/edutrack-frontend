@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "./api";
+
 type ApiEnvelope<T> = T & {
   message?: string;
 };
@@ -47,7 +49,7 @@ export type TeacherDashboardOverview = {
   }>;
 };
 
-const TEACHERS_API_BASE = "http://localhost/edutrack-backend/api/teachers";
+const TEACHERS_API_BASE = `${API_BASE_URL}/teachers`;
 
 export async function getTeacherDashboardOverview(): Promise<TeacherDashboardOverview> {
   const response = await fetch(`${TEACHERS_API_BASE}/dashboard.php`, {

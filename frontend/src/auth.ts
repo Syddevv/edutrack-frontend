@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "./api";
+
 export type AuthUser = {
   id: number;
   name: string;
@@ -17,7 +19,7 @@ export type PasswordResetInput = {
   newPassword: string;
 };
 
-const AUTH_API_BASE = "http://localhost/edutrack-backend/api/auth";
+const AUTH_API_BASE = `${API_BASE_URL}/auth`;
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${AUTH_API_BASE}${path}`, {
