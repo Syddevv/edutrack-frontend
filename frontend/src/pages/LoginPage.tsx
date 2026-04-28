@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { ForgotPasswordModal } from "../components/ForgotPasswordModal";
+import { LoginTwoFactorModal } from "../components/TwoFactorModals";
 import { GraduationCapIcon, LockIcon, MailIcon } from "../components/Icons";
+import type { LoginChallenge } from "../auth";
 
 type LoginPageProps = {
   onLogin: (credentials: {
@@ -8,10 +10,14 @@ type LoginPageProps = {
     password: string;
     expectedRole: "admin" | "teacher";
     rememberMe: boolean;
-  }) => Promise<string | null>;
+  }) => Promise<{ error: string | null; challenge: LoginChallenge | null }>;
+  onVerifyLoginTwoFactor: (code: string) => Promise<string | null>;
 };
 
-export function LoginPage({ onLogin }: LoginPageProps) {
+export function LoginPage({
+  onLogin,
+  onVerifyLoginTwoFactor,
+}: LoginPageProps) {
   const [email, setEmail] = useState("user@school.edu");
   const [password, setPassword] = useState("password");
   const [error, setError] = useState<string | null>(null);
@@ -19,21 +25,38 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [loginChallenge, setLoginChallenge] = useState<LoginChallenge | null>(null);
 
   async function handleLogin(expectedRole: "admin" | "teacher") {
     setIsSubmitting(true);
     setError(null);
     setNotice(null);
 
-    const nextError = await onLogin({
+    const result = await onLogin({
       email,
       password,
       expectedRole,
       rememberMe,
     });
 
-    setError(nextError);
+    setLoginChallenge(result.challenge);
+    setError(result.error);
     setIsSubmitting(false);
+  }
+
+  async function handleVerifyLoginTwoFactor(code: string) {
+    setIsSubmitting(true);
+    const nextError = await onVerifyLoginTwoFactor(code);
+    setIsSubmitting(false);
+
+    if (nextError) {
+      return nextError;
+    }
+
+    setLoginChallenge(null);
+    setError(null);
+
+    return null;
   }
 
   return (
@@ -134,6 +157,17 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           setNotice(message);
           setIsForgotPasswordOpen(false);
         }}
+      />
+
+      <LoginTwoFactorModal
+        email={loginChallenge?.email ?? email}
+        isOpen={loginChallenge !== null}
+        isSubmitting={isSubmitting}
+        onClose={() => {
+          setLoginChallenge(null);
+          setIsSubmitting(false);
+        }}
+        onVerify={handleVerifyLoginTwoFactor}
       />
     </>
   );

@@ -1,6 +1,15 @@
 import { useEffect, useState } from "react";
-import { CheckCircleIcon, SchoolIcon, SlidersIcon } from "../components/Icons";
+import {
+  LockIcon,
+  SchoolIcon,
+  SlidersIcon,
+} from "../components/Icons";
+import {
+  TwoFactorDisableModal,
+  TwoFactorSetupModal,
+} from "../components/TwoFactorModals";
 import { type AppSettings, updateAppSettings } from "../settings";
+import { getTwoFactorStatus } from "../twoFactor";
 
 type SettingsPageProps = {
   settings: AppSettings;
@@ -33,21 +42,60 @@ export function SettingsPage({ settings, onSettingsSaved }: SettingsPageProps) {
   const [defaultLandingPage, setDefaultLandingPage] = useState(
     settings.defaultLandingPage,
   );
-  const [lateThresholdMinutes, setLateThresholdMinutes] = useState(
-    settings.lateThresholdMinutes,
-  );
   const [profileMessage, setProfileMessage] = useState("");
   const [preferencesMessage, setPreferencesMessage] = useState("");
-  const [policyMessage, setPolicyMessage] = useState("");
+  const [twoFactorMessage, setTwoFactorMessage] = useState("");
   const [pageError, setPageError] = useState("");
+  const [isTwoFactorEnabled, setIsTwoFactorEnabled] = useState(false);
+  const [isTwoFactorLoading, setIsTwoFactorLoading] = useState(true);
+  const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
+  const [isDisableModalOpen, setIsDisableModalOpen] = useState(false);
 
   useEffect(() => {
     setSchoolName(settings.schoolName);
     setAcademicYearStart(settings.academicYearStart);
     setAiInsightsEnabled(settings.aiInsightsEnabled);
     setDefaultLandingPage(settings.defaultLandingPage);
-    setLateThresholdMinutes(settings.lateThresholdMinutes);
   }, [settings]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    void getTwoFactorStatus()
+      .then((status) => {
+        if (!isMounted) {
+          return;
+        }
+
+        setIsTwoFactorEnabled(status.enabled);
+      })
+      .catch((error) => {
+        if (!isMounted) {
+          return;
+        }
+
+        setPageError(
+          error instanceof Error
+            ? error.message
+            : "Failed to load two-factor authentication status.",
+        );
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsTwoFactorLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  async function refreshTwoFactorStatus(message?: string) {
+    const status = await getTwoFactorStatus();
+    setIsTwoFactorEnabled(status.enabled);
+    setTwoFactorMessage(message || "");
+  }
 
   async function saveProfile() {
     setPageError("");
@@ -91,34 +139,14 @@ export function SettingsPage({ settings, onSettingsSaved }: SettingsPageProps) {
     }
   }
 
-  async function savePolicy() {
-    setPageError("");
-    setPolicyMessage("");
-
-    try {
-      const updated = await updateAppSettings({
-        lateThresholdMinutes,
-      });
-
-      onSettingsSaved(updated);
-      setPolicyMessage("Attendance policy saved.");
-    } catch (error) {
-      setPageError(
-        error instanceof Error
-          ? error.message
-          : "Failed to save attendance policy.",
-      );
-    }
-  }
-
   return (
     <section className="page">
       <header className="page__topbar page__topbar--stack">
         <div>
           <h1 className="page-title heading-tight">General Settings</h1>
           <p className="page-subtitle">
-            Configure global settings for your institution, attendance rules,
-            and system preferences.
+            Configure your institution profile, dashboard defaults, and admin
+            account security.
           </p>
         </div>
       </header>
@@ -260,57 +288,102 @@ export function SettingsPage({ settings, onSettingsSaved }: SettingsPageProps) {
         </section>
       </div>
 
-      <section className="panel settings-card">
-        <div className="panel__title-row">
-          <div className="section-label">
-            <span className="section-label__icon">
-              <CheckCircleIcon className="table-action-icon" />
-            </span>
-            <div>
-              <h2 className="section-title">Attendance Policy</h2>
-              <p className="section-subtitle">
-                Configure how attendance is tracked and marked.
-              </p>
+      <section className="panel settings-card two-factor-card">
+        <div className="two-factor-card__hero">
+          <div className="two-factor-card__row">
+            <div className="section-label">
+              <span className="section-label__icon two-factor-card__icon">
+                <LockIcon className="table-action-icon" />
+              </span>
+              <div>
+                <h2 className="section-title">Two-Factor Authentication</h2>
+                <p className="section-subtitle">
+                  Add an authenticator-based verification step for your admin
+                  account.
+                </p>
+              </div>
             </div>
+
+            <button
+              className={`toggle${isTwoFactorEnabled ? " toggle--on" : ""}`}
+              type="button"
+              aria-label={
+                isTwoFactorEnabled
+                  ? "Disable two-factor authentication"
+                  : "Enable two-factor authentication"
+              }
+              aria-pressed={isTwoFactorEnabled}
+              disabled={isTwoFactorLoading}
+              onClick={() => {
+                setTwoFactorMessage("");
+
+                if (isTwoFactorEnabled) {
+                  setIsDisableModalOpen(true);
+                  return;
+                }
+
+                setIsSetupModalOpen(true);
+              }}
+            />
           </div>
         </div>
 
-        <div className="settings-form settings-form--policy">
-          <label className="field">
-            <span className="field__label">Late Threshold</span>
-            <span className="field__input field__input--split">
-              <input
-                className="font-data"
-                type="number"
-                min={1}
-                max={180}
-                value={lateThresholdMinutes}
-                onChange={(event) => {
-                  setPolicyMessage("");
-                  setLateThresholdMinutes(Number(event.target.value));
-                }}
-              />
-              <span className="field__suffix">min</span>
+        <div className="two-factor-card__body">
+          <div className="two-factor-card__status">
+            <span
+              className={`two-factor-card__pill${isTwoFactorEnabled ? " two-factor-card__pill--active" : ""}`}
+            >
+              {isTwoFactorLoading
+                ? "Checking status..."
+                : isTwoFactorEnabled
+                  ? "Enabled"
+                  : "Disabled"}
             </span>
             <span className="field__hint">
-              Minutes allowed before a student is counted late.
+              {twoFactorMessage ||
+                (isTwoFactorEnabled
+                  ? "Your account now expects a second verification method."
+                  : "Secure your admin session with one-time passcodes.")}
             </span>
-          </label>
-        </div>
+          </div>
 
-        <div className="settings-divider" />
+          <div className="two-factor-card__actions">
+            <button
+              className="button button--secondary"
+              type="button"
+              disabled={isTwoFactorLoading}
+              onClick={() => {
+                setTwoFactorMessage("");
 
-        <div className="settings-actions">
-          <span className="field__hint">{policyMessage || " "}</span>
-          <button
-            className="button button--primary"
-            type="button"
-            onClick={() => void savePolicy()}
-          >
-            Save Rules
-          </button>
+                if (isTwoFactorEnabled) {
+                  setIsDisableModalOpen(true);
+                  return;
+                }
+
+                setIsSetupModalOpen(true);
+              }}
+            >
+              {isTwoFactorEnabled ? "Manage 2FA" : "Set Up 2FA"}
+            </button>
+          </div>
         </div>
       </section>
+
+      <TwoFactorSetupModal
+        isOpen={isSetupModalOpen}
+        onClose={() => setIsSetupModalOpen(false)}
+        onEnabled={() =>
+          void refreshTwoFactorStatus("Two-factor authentication enabled.")
+        }
+      />
+
+      <TwoFactorDisableModal
+        isOpen={isDisableModalOpen}
+        onClose={() => setIsDisableModalOpen(false)}
+        onDisabled={() =>
+          void refreshTwoFactorStatus("Two-factor authentication disabled.")
+        }
+      />
     </section>
   );
 }

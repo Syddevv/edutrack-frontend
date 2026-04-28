@@ -11,6 +11,15 @@ export type ApiMessageResponse = {
   message: string;
 };
 
+export type LoginChallenge = {
+  requiresTwoFactor: true;
+  email: string;
+  role: string;
+  message: string;
+};
+
+export type LoginResult = AuthUser | LoginChallenge;
+
 export type PasswordResetInput = {
   email: string;
   code: string;
@@ -45,10 +54,17 @@ export async function login(
   email: string,
   password: string,
   rememberMe = false,
-): Promise<AuthUser> {
-  return request<AuthUser>("/login.php", {
+): Promise<LoginResult> {
+  return request<LoginResult>("/login.php", {
     method: "POST",
     body: JSON.stringify({ email, password, rememberMe }),
+  });
+}
+
+export async function verifyLoginTwoFactor(code: string): Promise<AuthUser> {
+  return request<AuthUser>("/verify-login-two-factor.php", {
+    method: "POST",
+    body: JSON.stringify({ code }),
   });
 }
 
