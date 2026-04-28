@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "./components/AppShell";
-import { getCurrentUser, login, logout, type AuthUser } from "./auth";
+import {
+  getCurrentUser,
+  login,
+  logout,
+  type AuthUser,
+  verifyLoginTwoFactor,
+} from "./auth";
 import {
   defaultAppSettings,
   getAppSettings,
@@ -140,11 +146,32 @@ function App() {
     rememberMe: boolean;
   }) => {
     try {
-      const user = await login(email, password, rememberMe);
+      const response = await login(email, password, rememberMe);
+      const resolvedRole =
+        "role" in response ? normalizeRole(response.role) : "admin";
+
+      if (resolvedRole !== expectedRole) {
+        return {
+          error: `This account is not allowed to log in as ${expectedRole}.`,
+          challenge: null,
+        };
+      }
+
+      if ("requiresTwoFactor" in response && response.requiresTwoFactor) {
+        return {
+          error: null,
+          challenge: response,
+        };
+      }
+
+      const user = response as AuthUser;
       const actualRole = normalizeRole(user.role);
 
       if (actualRole !== expectedRole) {
-        return `This account is not allowed to log in as ${expectedRole}.`;
+        return {
+          error: `This account is not allowed to log in as ${expectedRole}.`,
+          challenge: null,
+        };
       }
 
       setAuthUser(user);
@@ -156,9 +183,35 @@ function App() {
         setSettings(defaultAppSettings);
         navigate(defaultRouteForRole(user.role, defaultAppSettings));
       }
+      return {
+        error: null,
+        challenge: null,
+      };
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : "Unable to log in.",
+        challenge: null,
+      };
+    }
+  };
+
+  const handleLoginTwoFactorSuccess = async (code: string) => {
+    try {
+      const user = await verifyLoginTwoFactor(code);
+      setAuthUser(user);
+
+      try {
+        const loadedSettings = await getAppSettings();
+        setSettings(loadedSettings);
+        navigate(defaultRouteForRole(user.role, loadedSettings));
+      } catch {
+        setSettings(defaultAppSettings);
+        navigate(defaultRouteForRole(user.role, defaultAppSettings));
+      }
+
       return null;
     } catch (error) {
-      return error instanceof Error ? error.message : "Unable to log in.";
+      return error instanceof Error ? error.message : "Unable to verify 2FA.";
     }
   };
 
@@ -181,7 +234,12 @@ function App() {
 
   switch (route) {
     case "login":
-      return <LoginPage onLogin={handleLogin} />;
+      return (
+        <LoginPage
+          onLogin={handleLogin}
+          onVerifyLoginTwoFactor={handleLoginTwoFactorSuccess}
+        />
+      );
     case "students":
       return (
         <AppShell
@@ -235,7 +293,10 @@ function App() {
           onLogout={handleLogout}
           variant="teacher"
         >
-          <TeacherDashboardPage teacherName={authUser?.name} />
+          <TeacherDashboardPage
+            schoolName={settings.schoolName}
+            teacherName={authUser?.name}
+          />
         </AppShell>
       );
     case "attendance":
@@ -271,7 +332,7 @@ function App() {
           onNavigate={navigate}
           onLogout={handleLogout}
         >
-          <DashboardPage />
+          <DashboardPage schoolName={settings.schoolName} />
         </AppShell>
       );
   }

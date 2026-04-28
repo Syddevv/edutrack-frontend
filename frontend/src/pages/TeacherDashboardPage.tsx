@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
+import schoolLogoUrl from "../assets/bpc-logo-removebg-preview.png";
 import {
   CheckCircleIcon,
   ClockIcon,
@@ -69,10 +70,12 @@ function SparkIcon() {
 }
 
 type TeacherDashboardPageProps = {
+  schoolName: string;
   teacherName?: string;
 };
 
 export function TeacherDashboardPage({
+  schoolName,
   teacherName,
 }: TeacherDashboardPageProps) {
   const [overview, setOverview] = useState<TeacherDashboardOverview | null>(
@@ -167,10 +170,20 @@ export function TeacherDashboardPage({
   return (
     <section className="page">
       <header className="page__topbar page__topbar--stack">
-        <div>
-          <h1 className="page-title heading-tight teacher-dashboard-title">
-            Dashboard
-          </h1>
+        <div className="dashboard-identity">
+          <img
+            className="dashboard-identity__logo"
+            src={schoolLogoUrl}
+            alt={`${schoolName} logo`}
+          />
+          <div>
+            <p className="dashboard-identity__eyebrow">Teacher Dashboard</p>
+            <h1 className="page-title heading-tight teacher-dashboard-title">
+              {schoolName}
+            </h1>
+          </div>
+        </div>
+        <div className="teacher-dashboard-header-copy">
           <p className="page-subtitle">
             {teacherName ? `${teacherName} • ` : ""}
             {overview?.attendanceDateLabel

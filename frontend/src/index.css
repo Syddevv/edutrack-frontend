@@ -135,6 +135,19 @@ textarea {
     box-shadow var(--motion-base) var(--motion-smooth);
 }
 
+.brand-mark--logo {
+  background: #fff;
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.brand-mark__image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 3px;
+}
+
 .brand-mark__icon,
 .nav__icon,
 .button__icon,
@@ -149,9 +162,10 @@ textarea {
 }
 
 .brand-name {
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 800;
   letter-spacing: -0.03em;
+  line-height: 1.2;
 }
 
 .sidebar__nav {
@@ -263,6 +277,30 @@ textarea {
   gap: 10px;
 }
 
+.dashboard-identity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.dashboard-identity__logo {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 10px 20px rgba(17, 24, 39, 0.08));
+}
+
+.dashboard-identity__eyebrow {
+  margin: 0 0 6px;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .stats-grid {
   display: grid;
   gap: 14px;
@@ -285,7 +323,13 @@ textarea {
   height: 100%;
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 16px;
   overflow: hidden;
+}
+
+.dashboard-page .page__topbar,
+.dashboard-page .stats-grid {
+  margin-bottom: 0;
 }
 
 .dashboard-page__panel {
@@ -296,7 +340,7 @@ textarea {
 
 .dashboard-page__table-scroll {
   min-height: 0;
-  max-height: calc(100vh - 430px);
+  max-height: calc(100vh - 500px);
   overflow: auto;
 }
 
@@ -778,6 +822,10 @@ textarea {
 .teacher-dashboard-actions {
   align-items: center;
   gap: 14px;
+}
+
+.teacher-dashboard-header-copy {
+  width: 100%;
 }
 
 .teacher-dashboard-date-pill {

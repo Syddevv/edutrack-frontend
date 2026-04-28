@@ -15,7 +15,6 @@ import schoolLogoUrl from "../assets/bpc-logo-removebg-preview.png";
 import { getStudents, type StudentRecord } from "../students";
 
 const DASHBOARD_ROWS_PER_PAGE = 7;
-const SCHOOL_NAME = "Bulacan Polytechnic College";
 
 function getStatusTone(status: DashboardOverview["rows"][number]["status"]) {
   if (status === "No Record") {
@@ -44,10 +43,10 @@ function formatFilenameDate(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
-function buildStudentsCsv(students: StudentRecord[]) {
+function buildStudentsCsv(students: StudentRecord[], schoolName: string) {
   const generatedAt = new Date();
   const rows: Array<Array<string | number>> = [
-    ["School Name", SCHOOL_NAME],
+    ["School Name", schoolName],
     ["School Logo", getSchoolLogoReference()],
     ["Generated At", generatedAt.toLocaleString()],
     [],
@@ -78,7 +77,11 @@ function downloadCsv(content: string, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-export function DashboardPage() {
+type DashboardPageProps = {
+  schoolName: string;
+};
+
+export function DashboardPage({ schoolName }: DashboardPageProps) {
   const [feedback, setFeedback] = useState<{
     message: string;
     title: string;
@@ -118,7 +121,7 @@ export function DashboardPage() {
 
     try {
       const response = await getStudents();
-      const csv = buildStudentsCsv(response.students);
+      const csv = buildStudentsCsv(response.students, schoolName);
       downloadCsv(csv, `students-${formatFilenameDate(new Date())}.csv`);
       setIsExportConfirmOpen(false);
       setFeedback({
@@ -206,8 +209,19 @@ export function DashboardPage() {
   return (
     <section className="page dashboard-page">
       <header className="page__topbar">
-        <div>
-          <h1 className="page-title heading-tight">Dashboard</h1>
+        <div className="dashboard-identity">
+          <img
+            className="dashboard-identity__logo"
+            src={schoolLogoUrl}
+            alt={`${schoolName} logo`}
+          />
+          <div>
+            <p className="dashboard-identity__eyebrow">Admin Dashboard</p>
+            <h1 className="page-title heading-tight">{schoolName}</h1>
+            <p className="page-subtitle">
+              Daily attendance snapshot and student records overview.
+            </p>
+          </div>
         </div>
         <div className="page-date">{overview?.dateLabel ?? ""}</div>
       </header>
