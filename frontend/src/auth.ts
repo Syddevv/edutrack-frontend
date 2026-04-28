@@ -21,6 +21,25 @@ export type PasswordResetInput = {
 
 const AUTH_API_BASE = `${API_BASE_URL}/auth`;
 
+function sanitizeAuthUser(value: unknown): AuthUser {
+  const user =
+    typeof value === "object" && value !== null
+      ? (value as Partial<AuthUser>)
+      : {};
+
+  return {
+    id: typeof user.id === "number" ? user.id : Number(user.id ?? 0),
+    name: typeof user.name === "string" ? user.name : "",
+    email: typeof user.email === "string" ? user.email : "",
+    role: typeof user.role === "string" ? user.role : "admin",
+    status: typeof user.status === "string" ? user.status : "active",
+    created_at:
+      typeof user.created_at === "string" || user.created_at === null
+        ? user.created_at
+        : null,
+  };
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${AUTH_API_BASE}${path}`, {
     credentials: "include",
@@ -40,7 +59,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error(payload.message || "Request failed.");
   }
 
-  return (payload.user ?? payload) as T;
+  const result = (payload.user ?? payload) as unknown;
+
+  if (path === "/login.php" || path === "/me.php") {
+    return sanitizeAuthUser(result) as T;
+  }
+
+  return result as T;
 }
 
 export async function login(
@@ -84,3 +109,4 @@ export async function resetPassword(
     body: JSON.stringify(input),
   });
 }
+

@@ -40,8 +40,10 @@ const getRouteFromHash = (): RouteKey => {
   return validRoutes.includes(hash) ? hash : "login";
 };
 
-function normalizeRole(role: string): "admin" | "teacher" {
-  return role.toLowerCase() === "teacher" ? "teacher" : "admin";
+function normalizeRole(role: string | null | undefined): "admin" | "teacher" {
+  return typeof role === "string" && role.toLowerCase() === "teacher"
+    ? "teacher"
+    : "admin";
 }
 
 function defaultRouteForRole(role: string, settings: AppSettings): RouteKey {
@@ -268,3 +270,4 @@ function App() {
 }
 
 export default App;
+
