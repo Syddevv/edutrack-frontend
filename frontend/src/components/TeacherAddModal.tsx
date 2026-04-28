@@ -16,6 +16,7 @@ type TeacherAddModalProps = {
   lookups: TeacherLookupData;
   onClose: () => void;
   onSubmit: (input: CreateTeacherInput) => Promise<void>;
+  onSubmitError?: (message: string) => void;
 };
 
 const fallbackLookups: TeacherLookupData = {
@@ -44,6 +45,7 @@ export function TeacherAddModal({
   lookups,
   onClose,
   onSubmit,
+  onSubmitError,
 }: TeacherAddModalProps) {
   const resolvedLookups = useMemo(
     () => ({
@@ -137,7 +139,11 @@ export function TeacherAddModal({
         assignedClasses,
       });
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Failed to save teacher.");
+      const message =
+        submitError instanceof Error
+          ? submitError.message
+          : "Failed to save teacher.";
+      onSubmitError?.(message);
     }
   }
 

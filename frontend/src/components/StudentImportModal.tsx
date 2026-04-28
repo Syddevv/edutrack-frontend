@@ -6,17 +6,18 @@ interface StudentImportModalProps {
   isSubmitting?: boolean;
   onClose: () => void;
   onImport: (file: File) => Promise<ImportStudentsResult>;
+  onImportError?: (message: string) => void;
 }
 
 export function StudentImportModal({
   isSubmitting = false,
   onClose,
   onImport,
+  onImportError,
 }: StudentImportModalProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState("");
-  const [summary, setSummary] = useState("");
 
   function handleFileSelect(fileList: FileList | null) {
     const file = fileList?.[0] ?? null;
@@ -33,7 +34,6 @@ export function StudentImportModal({
 
     setSelectedFile(file);
     setError("");
-    setSummary("");
   }
 
   async function handleImport() {
@@ -45,16 +45,11 @@ export function StudentImportModal({
     setError("");
 
     try {
-      const result = await onImport(selectedFile);
-      setSummary(
-        `Imported ${result.importedCount} student${result.importedCount === 1 ? "" : "s"}${result.skippedCount > 0 ? `, skipped ${result.skippedCount}` : ""}.`,
-      );
-
-      if (result.errors.length > 0) {
-        setError(result.errors.slice(0, 3).join(" "));
-      }
+      await onImport(selectedFile);
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Import failed.");
+      const message =
+        submitError instanceof Error ? submitError.message : "Import failed.";
+      onImportError?.(message);
     }
   }
 
@@ -126,7 +121,6 @@ export function StudentImportModal({
         </span>
       </button>
 
-      {summary ? <p className="student-modal__notice-text">{summary}</p> : null}
       {error ? <p className="login-card__error">{error}</p> : null}
 
       <div className="student-modal__actions">

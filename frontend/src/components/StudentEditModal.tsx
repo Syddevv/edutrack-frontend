@@ -8,6 +8,7 @@ interface StudentEditModalProps {
   studentToEdit: StudentRecord | null;
   onClose: () => void;
   onSave: (input: UpdateStudentInput) => Promise<void>;
+  onSubmitError?: (message: string) => void;
 }
 
 function getDefaultCourseId(lookups: StudentLookupData) {
@@ -28,6 +29,7 @@ export function StudentEditModal({
   studentToEdit,
   onClose,
   onSave,
+  onSubmitError,
 }: StudentEditModalProps) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -83,7 +85,11 @@ export function StudentEditModal({
         sectionId,
       });
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Failed to update student.");
+      const message =
+        submitError instanceof Error
+          ? submitError.message
+          : "Failed to update student.";
+      onSubmitError?.(message);
     }
   }
 

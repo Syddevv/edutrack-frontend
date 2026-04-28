@@ -8,6 +8,7 @@ interface StudentAddModalProps {
   lookups: StudentLookupData;
   onClose: () => void;
   onAdd: (input: CreateStudentInput) => Promise<void>;
+  onSubmitError?: (message: string) => void;
 }
 
 function getDefaultCourseId(lookups: StudentLookupData) {
@@ -28,6 +29,7 @@ export function StudentAddModal({
   lookups,
   onClose,
   onAdd,
+  onSubmitError,
 }: StudentAddModalProps) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -82,7 +84,11 @@ export function StudentAddModal({
         sectionId,
       });
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Failed to add student.");
+      const message =
+        submitError instanceof Error
+          ? submitError.message
+          : "Failed to add student.";
+      onSubmitError?.(message);
     }
   }
 

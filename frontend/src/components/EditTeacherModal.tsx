@@ -23,6 +23,7 @@ type EditTeacherModalProps = {
   lookups: TeacherLookupData;
   onClose: () => void;
   onSubmit: (input: UpdateTeacherInput) => Promise<void>;
+  onSubmitError?: (message: string) => void;
   teacher: TeacherRecord | null;
 };
 
@@ -44,6 +45,7 @@ export function EditTeacherModal({
   lookups,
   onClose,
   onSubmit,
+  onSubmitError,
   teacher,
 }: EditTeacherModalProps) {
   const [fullName, setFullName] = useState("");
@@ -137,11 +139,11 @@ export function EditTeacherModal({
         assignedClasses,
       });
     } catch (submitError) {
-      setError(
+      const message =
         submitError instanceof Error
           ? submitError.message
-          : "Failed to update teacher.",
-      );
+          : "Failed to update teacher.";
+      onSubmitError?.(message);
     }
   }
 
