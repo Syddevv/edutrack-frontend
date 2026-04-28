@@ -78,10 +78,14 @@ function downloadCsv(content: string, filename: string) {
 }
 
 type DashboardPageProps = {
+  academicYearStart: number;
   schoolName: string;
 };
 
-export function DashboardPage({ schoolName }: DashboardPageProps) {
+export function DashboardPage({
+  academicYearStart,
+  schoolName,
+}: DashboardPageProps) {
   const [feedback, setFeedback] = useState<{
     message: string;
     title: string;
@@ -219,6 +223,7 @@ export function DashboardPage({ schoolName }: DashboardPageProps) {
             <p className="dashboard-identity__eyebrow">Admin Dashboard</p>
             <h1 className="page-title heading-tight">{schoolName}</h1>
             <p className="page-subtitle">
+              Academic Year {academicYearStart} - {academicYearStart + 1} •
               Daily attendance snapshot and student records overview.
             </p>
           </div>

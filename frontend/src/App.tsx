@@ -294,6 +294,7 @@ function App() {
           variant="teacher"
         >
           <TeacherDashboardPage
+            academicYearStart={settings.academicYearStart}
             schoolName={settings.schoolName}
             teacherName={authUser?.name}
           />
@@ -332,7 +333,10 @@ function App() {
           onNavigate={navigate}
           onLogout={handleLogout}
         >
-          <DashboardPage schoolName={settings.schoolName} />
+          <DashboardPage
+            academicYearStart={settings.academicYearStart}
+            schoolName={settings.schoolName}
+          />
         </AppShell>
       );
   }

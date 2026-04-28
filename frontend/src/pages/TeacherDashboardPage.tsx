@@ -70,11 +70,13 @@ function SparkIcon() {
 }
 
 type TeacherDashboardPageProps = {
+  academicYearStart: number;
   schoolName: string;
   teacherName?: string;
 };
 
 export function TeacherDashboardPage({
+  academicYearStart,
   schoolName,
   teacherName,
 }: TeacherDashboardPageProps) {
@@ -169,29 +171,39 @@ export function TeacherDashboardPage({
 
   return (
     <section className="page">
-      <header className="page__topbar page__topbar--stack">
-        <div className="dashboard-identity">
-          <img
-            className="dashboard-identity__logo"
-            src={schoolLogoUrl}
-            alt={`${schoolName} logo`}
-          />
-          <div>
-            <p className="dashboard-identity__eyebrow">Teacher Dashboard</p>
-            <h1 className="page-title heading-tight teacher-dashboard-title">
-              {schoolName}
-            </h1>
+      <header className="teacher-dashboard-hero">
+        <div className="teacher-dashboard-hero__main">
+          <div className="dashboard-identity teacher-dashboard-identity">
+            <img
+              className="dashboard-identity__logo"
+              src={schoolLogoUrl}
+              alt={`${schoolName} logo`}
+            />
+            <div>
+              <p className="dashboard-identity__eyebrow">Teacher Dashboard</p>
+              <h1 className="page-title heading-tight teacher-dashboard-title">
+                {schoolName}
+              </h1>
+              <p className="page-subtitle">
+                Academic Year {academicYearStart} - {academicYearStart + 1}
+              </p>
+            </div>
+          </div>
+
+          <div className="teacher-dashboard-hero__meta">
+            <span className="teacher-dashboard-hero__teacher">
+              {teacherName ?? "Teacher"}
+            </span>
+            <span className="teacher-dashboard-hero__dot" aria-hidden="true" />
+            <span className="teacher-dashboard-hero__summary">
+              {overview?.attendanceDateLabel
+                ? `Overview based on ${overview.attendanceDateLabel}`
+                : `Overview for ${overview?.dateLabel ?? ""}`}
+            </span>
           </div>
         </div>
-        <div className="teacher-dashboard-header-copy">
-          <p className="page-subtitle">
-            {teacherName ? `${teacherName} • ` : ""}
-            {overview?.attendanceDateLabel
-              ? `Overview based on ${overview.attendanceDateLabel}`
-              : `Overview for ${overview?.dateLabel ?? ""}`}
-          </p>
-        </div>
-        <div className="page-actions teacher-dashboard-actions">
+
+        <div className="page-actions teacher-dashboard-actions teacher-dashboard-actions--hero">
           <div className="count-pill teacher-dashboard-date-pill">
             <ClockIcon className="teacher-dashboard-date-icon" />
             {overview?.dateLabel ?? ""}

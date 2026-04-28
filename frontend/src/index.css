@@ -819,13 +819,59 @@ textarea {
   font-size: 32px;
 }
 
+.teacher-dashboard-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: center;
+  margin-bottom: 26px;
+}
+
+.teacher-dashboard-hero__main {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.teacher-dashboard-identity {
+  align-items: flex-start;
+}
+
+.teacher-dashboard-hero__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding-left: 74px;
+  color: #6f7682;
+  font-size: 15px;
+  flex-wrap: wrap;
+}
+
+.teacher-dashboard-hero__teacher {
+  color: #171717;
+  font-weight: 700;
+}
+
+.teacher-dashboard-hero__dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: #b8bec8;
+  flex: 0 0 auto;
+}
+
+.teacher-dashboard-hero__summary {
+  min-width: 0;
+}
+
 .teacher-dashboard-actions {
   align-items: center;
   gap: 14px;
 }
 
-.teacher-dashboard-header-copy {
-  width: 100%;
+.teacher-dashboard-actions--hero {
+  align-self: start;
 }
 
 .teacher-dashboard-date-pill {
@@ -3934,6 +3980,14 @@ textarea {
   .teacher-schedule-day__head,
   .teacher-schedule-form__head {
     align-items: stretch;
+  }
+
+  .teacher-dashboard-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .teacher-dashboard-hero__meta {
+    padding-left: 0;
   }
 
   .page-actions,
