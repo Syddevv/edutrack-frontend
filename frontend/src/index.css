@@ -296,6 +296,7 @@ textarea {
 
 .dashboard-page__table-scroll {
   min-height: 0;
+  max-height: calc(100vh - 430px);
   overflow: auto;
 }
 
@@ -303,6 +304,10 @@ textarea {
   position: sticky;
   top: 0;
   z-index: 1;
+}
+
+.dashboard-page__footer {
+  flex: 0 0 auto;
 }
 
 .stat-card {

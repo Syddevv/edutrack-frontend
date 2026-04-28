@@ -14,7 +14,7 @@ import { getDashboardOverview, type DashboardOverview } from "../dashboard";
 import schoolLogoUrl from "../assets/bpc-logo-removebg-preview.png";
 import { getStudents, type StudentRecord } from "../students";
 
-const DASHBOARD_ROWS_PER_PAGE = 10;
+const DASHBOARD_ROWS_PER_PAGE = 7;
 const SCHOOL_NAME = "Bulacan Polytechnic College";
 
 function getStatusTone(status: DashboardOverview["rows"][number]["status"]) {
@@ -304,7 +304,7 @@ export function DashboardPage() {
               </table>
             </div>
 
-            <div className="table-footer">
+            <div className="table-footer dashboard-page__footer">
               <span>
                 Showing {(currentPage - 1) * DASHBOARD_ROWS_PER_PAGE + 1}-
                 {Math.min(
@@ -324,6 +324,9 @@ export function DashboardPage() {
                 >
                   Previous
                 </button>
+                <span className="count-pill">
+                  Page {currentPage} of {totalPages}
+                </span>
                 <button
                   className="button button--secondary button--small"
                   type="button"
