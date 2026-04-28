@@ -86,6 +86,12 @@ export function TeacherDashboardPage({
     void loadOverview();
   }, []);
 
+  useEffect(() => {
+    if (overview?.aiInsight) {
+      setDismissedAlert(false);
+    }
+  }, [overview?.aiInsight?.title, overview?.aiInsight?.body]);
+
   async function loadOverview() {
     setIsLoading(true);
     setPageError("");
@@ -381,18 +387,17 @@ export function TeacherDashboardPage({
             </div>
           </section>
 
-          {!dismissedAlert ? (
+          {!dismissedAlert && overview?.aiInsight ? (
             <section className="teacher-dashboard-alert">
               <div className="teacher-dashboard-alert__badge">
                 <SparkIcon />
                 <span>AI Insight</span>
               </div>
               <h3 className="teacher-dashboard-alert__title">
-                Attendance Alert
+                {overview.aiInsight.title}
               </h3>
               <p className="teacher-dashboard-alert__body">
-                David Lee has been late 3 times this week. Would you like to
-                schedule a quick check-in meeting?
+                {overview.aiInsight.body}
               </p>
               <div className="teacher-dashboard-alert__actions">
                 <button

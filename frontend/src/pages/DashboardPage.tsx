@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ConfirmationDialog } from "../components/ConfirmationDialog";
+import { StatusModal } from "../components/StatusModal";
 import {
   CheckCircleIcon,
   ClockIcon,
@@ -78,6 +79,11 @@ function downloadCsv(content: string, filename: string) {
 }
 
 export function DashboardPage() {
+  const [feedback, setFeedback] = useState<{
+    message: string;
+    title: string;
+    tone: "success" | "error";
+  } | null>(null);
   const [isExportConfirmOpen, setIsExportConfirmOpen] = useState(false);
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -115,10 +121,18 @@ export function DashboardPage() {
       const csv = buildStudentsCsv(response.students);
       downloadCsv(csv, `students-${formatFilenameDate(new Date())}.csv`);
       setIsExportConfirmOpen(false);
+      setFeedback({
+        title: "Export Complete",
+        message: "The student CSV file was generated successfully.",
+        tone: "success",
+      });
     } catch (error) {
-      setPageError(
-        error instanceof Error ? error.message : "Failed to export students.",
-      );
+      setFeedback({
+        title: "Export Failed",
+        message:
+          error instanceof Error ? error.message : "Failed to export students.",
+        tone: "error",
+      });
     } finally {
       setIsExporting(false);
     }
@@ -332,6 +346,13 @@ export function DashboardPage() {
         confirmLabel={isExporting ? "Exporting..." : "Export CSV"}
         onCancel={() => setIsExportConfirmOpen(false)}
         onConfirm={() => void handleExportStudentsCsv()}
+      />
+      <StatusModal
+        isOpen={feedback !== null}
+        title={feedback?.title ?? ""}
+        message={feedback?.message ?? ""}
+        tone={feedback?.tone ?? "success"}
+        onClose={() => setFeedback(null)}
       />
     </section>
   );

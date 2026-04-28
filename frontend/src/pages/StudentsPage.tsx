@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ConfirmationDialog } from "../components/ConfirmationDialog";
+import { StatusModal } from "../components/StatusModal";
 import { StudentAddModal } from "../components/StudentAddModal";
 import { StudentEditModal } from "../components/StudentEditModal";
 import { StudentImportModal } from "../components/StudentImportModal";
@@ -39,6 +40,11 @@ function getStatusTone(status: StudentRecord["attendanceStatus"]) {
 }
 
 export function StudentsPage() {
+  const [feedback, setFeedback] = useState<{
+    message: string;
+    title: string;
+    tone: "success" | "error";
+  } | null>(null);
   const [students, setStudents] = useState<StudentRecord[]>([]);
   const [lookups, setLookups] = useState<StudentLookupData>(emptyLookups);
   const [activeModal, setActiveModal] = useState<
@@ -145,6 +151,11 @@ export function StudentsPage() {
       await createStudent(input);
       await loadStudents();
       setActiveModal(null);
+      setFeedback({
+        title: "Student Added",
+        message: "The student record was created successfully.",
+        tone: "success",
+      });
     } finally {
       setIsAddSubmitting(false);
     }
@@ -158,6 +169,11 @@ export function StudentsPage() {
       await loadStudents();
       setActiveModal(null);
       setStudentToEdit(null);
+      setFeedback({
+        title: "Student Updated",
+        message: "The student details were saved successfully.",
+        tone: "success",
+      });
     } finally {
       setIsEditSubmitting(false);
     }
@@ -174,6 +190,11 @@ export function StudentsPage() {
       await deleteStudent(studentToDelete.id);
       await loadStudents();
       setStudentToDelete(null);
+      setFeedback({
+        title: "Student Deleted",
+        message: "The student record was removed successfully.",
+        tone: "success",
+      });
     } finally {
       setIsDeleteSubmitting(false);
     }
@@ -188,10 +209,18 @@ export function StudentsPage() {
       const result = await importStudents(file);
       await loadStudents();
       setActiveModal(null);
-      setPageError(
+      setFeedback(
         result.errors.length > 0
-          ? `Imported ${result.importedCount} student(s), skipped ${result.skippedCount}. ${result.errors[0]}`
-          : "",
+          ? {
+              title: "Import Completed With Issues",
+              message: `Imported ${result.importedCount} student(s), skipped ${result.skippedCount}. ${result.errors[0]}`,
+              tone: "error",
+            }
+          : {
+              title: "Students Imported",
+              message: `Imported ${result.importedCount} student${result.importedCount === 1 ? "" : "s"} successfully.`,
+              tone: "success",
+            },
       );
       return result;
     } finally {
@@ -436,6 +465,13 @@ export function StudentsPage() {
               lookups={lookups}
               onClose={() => setActiveModal(null)}
               onAdd={handleCreateStudent}
+              onSubmitError={(message) =>
+                setFeedback({
+                  title: "Add Student Failed",
+                  message,
+                  tone: "error",
+                })
+              }
             />
           )}
           {activeModal === "edit" && (
@@ -448,6 +484,13 @@ export function StudentsPage() {
                 setStudentToEdit(null);
               }}
               onSave={handleEditStudent}
+              onSubmitError={(message) =>
+                setFeedback({
+                  title: "Update Student Failed",
+                  message,
+                  tone: "error",
+                })
+              }
             />
           )}
           {activeModal === "import" && (
@@ -455,6 +498,13 @@ export function StudentsPage() {
               isSubmitting={isImportSubmitting}
               onClose={() => setActiveModal(null)}
               onImport={handleImportStudents}
+              onImportError={(message) =>
+                setFeedback({
+                  title: "Import Failed",
+                  message,
+                  tone: "error",
+                })
+              }
             />
           )}
         </div>
@@ -471,6 +521,13 @@ export function StudentsPage() {
         tone="danger"
         onCancel={() => setStudentToDelete(null)}
         onConfirm={() => void handleDeleteStudent()}
+      />
+      <StatusModal
+        isOpen={feedback !== null}
+        title={feedback?.title ?? ""}
+        message={feedback?.message ?? ""}
+        tone={feedback?.tone ?? "success"}
+        onClose={() => setFeedback(null)}
       />
     </section>
   );

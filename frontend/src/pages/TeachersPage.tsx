@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { TeacherAddModal } from "../components/TeacherAddModal";
 import { EditTeacherModal } from "../components/EditTeacherModal";
 import { ConfirmationDialog } from "../components/ConfirmationDialog";
+import { StatusModal } from "../components/StatusModal";
 import {
   FilterIcon,
   PencilIcon,
@@ -89,6 +90,11 @@ function formatSummaryCards(summary: TeacherSummary) {
 }
 
 export function TeachersPage() {
+  const [feedback, setFeedback] = useState<{
+    message: string;
+    title: string;
+    tone: "success" | "error";
+  } | null>(null);
   const [teachers, setTeachers] = useState<TeacherRecord[]>([]);
   const [summary, setSummary] = useState<TeacherSummary>(emptySummary);
   const [lookups, setLookups] = useState<TeacherLookupData>(emptyLookups);
@@ -166,6 +172,11 @@ export function TeachersPage() {
       setTeachers((current) => [teacher, ...current]);
       await loadTeachers();
       setIsAddTeacherOpen(false);
+      setFeedback({
+        title: "Teacher Added",
+        message: "The teacher account was created successfully.",
+        tone: "success",
+      });
     } finally {
       setIsAddSubmitting(false);
     }
@@ -183,6 +194,11 @@ export function TeachersPage() {
       );
       await loadTeachers();
       setTeacherToEdit(null);
+      setFeedback({
+        title: "Teacher Updated",
+        message: "The teacher details were saved successfully.",
+        tone: "success",
+      });
     } finally {
       setIsEditSubmitting(false);
     }
@@ -216,10 +232,18 @@ export function TeachersPage() {
         ),
       }));
       setTeacherToDelete(null);
+      setFeedback({
+        title: "Teacher Deleted",
+        message: "The teacher record was removed successfully.",
+        tone: "success",
+      });
     } catch (error) {
-      setPageError(
-        error instanceof Error ? error.message : "Failed to delete teacher.",
-      );
+      setFeedback({
+        title: "Delete Teacher Failed",
+        message:
+          error instanceof Error ? error.message : "Failed to delete teacher.",
+        tone: "error",
+      });
     }
   }
 
@@ -375,6 +399,13 @@ export function TeachersPage() {
         lookups={lookups}
         onClose={() => setIsAddTeacherOpen(false)}
         onSubmit={handleCreateTeacher}
+        onSubmitError={(message) =>
+          setFeedback({
+            title: "Add Teacher Failed",
+            message,
+            tone: "error",
+          })
+        }
       />
       <EditTeacherModal
         isOpen={teacherToEdit !== null}
@@ -383,6 +414,13 @@ export function TeachersPage() {
         teacher={teacherToEdit}
         onClose={() => setTeacherToEdit(null)}
         onSubmit={handleEditTeacher}
+        onSubmitError={(message) =>
+          setFeedback({
+            title: "Update Teacher Failed",
+            message,
+            tone: "error",
+          })
+        }
       />
       <ConfirmationDialog
         isOpen={teacherToDelete !== null}
@@ -396,6 +434,13 @@ export function TeachersPage() {
         tone="danger"
         onCancel={() => setTeacherToDelete(null)}
         onConfirm={() => void handleDeleteTeacher()}
+      />
+      <StatusModal
+        isOpen={feedback !== null}
+        title={feedback?.title ?? ""}
+        message={feedback?.message ?? ""}
+        tone={feedback?.tone ?? "success"}
+        onClose={() => setFeedback(null)}
       />
     </section>
   );

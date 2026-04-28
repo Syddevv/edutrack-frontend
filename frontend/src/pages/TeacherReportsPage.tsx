@@ -4,6 +4,7 @@ import {
   type TeacherClassSelection,
 } from "../components/ChangeClassModal";
 import { ConfirmationDialog } from "../components/ConfirmationDialog";
+import { StatusModal } from "../components/StatusModal";
 import { DownloadIcon, RefreshIcon } from "../components/Icons";
 import {
   getTeacherReports,
@@ -105,6 +106,11 @@ function buildTeacherReportsCsv(
 }
 
 export function TeacherReportsPage() {
+  const [feedback, setFeedback] = useState<{
+    message: string;
+    title: string;
+    tone: "success" | "error";
+  } | null>(null);
   const [isExportConfirmOpen, setIsExportConfirmOpen] = useState(false);
   const [isChangeClassOpen, setIsChangeClassOpen] = useState(false);
   const [overview, setOverview] = useState<TeacherReportsOverview | null>(null);
@@ -166,12 +172,20 @@ export function TeacherReportsPage() {
       const csv = buildTeacherReportsCsv(exportOverview, exportClass);
       downloadCsv(csv, `class-report-${formatFilenameDate(new Date())}.csv`);
       setIsExportConfirmOpen(false);
+      setFeedback({
+        title: "Export Complete",
+        message: "The class report CSV was generated successfully.",
+        tone: "success",
+      });
     } catch (error) {
-      setPageError(
-        error instanceof Error
-          ? error.message
-          : "Failed to export class report.",
-      );
+      setFeedback({
+        title: "Export Failed",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to export class report.",
+        tone: "error",
+      });
     } finally {
       setIsExporting(false);
     }
@@ -360,6 +374,13 @@ export function TeacherReportsPage() {
         confirmLabel={isExporting ? "Exporting..." : "Export CSV"}
         onCancel={() => setIsExportConfirmOpen(false)}
         onConfirm={() => void handleExportCsv()}
+      />
+      <StatusModal
+        isOpen={feedback !== null}
+        title={feedback?.title ?? ""}
+        message={feedback?.message ?? ""}
+        tone={feedback?.tone ?? "success"}
+        onClose={() => setFeedback(null)}
       />
     </section>
   );

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { StatusModal } from "../components/StatusModal";
 import { CheckCircleIcon, ClockIcon, XCircleIcon } from "../components/Icons";
 import { ConfirmationDialog } from "../components/ConfirmationDialog";
 import {
@@ -79,6 +80,11 @@ function StudentAvatar({ name }: { name: string }) {
 }
 
 export function TeacherAttendancePage() {
+  const [feedback, setFeedback] = useState<{
+    message: string;
+    title: string;
+    tone: "success" | "error";
+  } | null>(null);
   const [assignments, setAssignments] = useState<TeacherAttendanceAssignment[]>(
     [],
   );
@@ -90,7 +96,6 @@ export function TeacherAttendancePage() {
   const [saveAction, setSaveAction] = useState<"save" | "reset">("save");
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [pageError, setPageError] = useState("");
-  const [saveMessage, setSaveMessage] = useState("");
 
   useEffect(() => {
     void loadAttendance(selectedDate, selectedClassId ?? undefined);
@@ -207,12 +212,10 @@ export function TeacherAttendancePage() {
     const fallback =
       exactMatch ?? courseYearMatch ?? courseMatch ?? assignments[0];
 
-    setSaveMessage("");
     setSelectedClassId(fallback?.classId ?? null);
   }
 
   function updateStatus(studentId: number, status: AttendanceStatus) {
-    setSaveMessage("");
     setStudents((current) =>
       current.map((student) =>
         student.id === studentId ? { ...student, status } : student,
@@ -232,7 +235,6 @@ export function TeacherAttendancePage() {
     setIsSaving(true);
     setSaveAction(action);
     setPageError("");
-    setSaveMessage("");
 
     try {
       const response = await saveTeacherAttendance({
@@ -248,11 +250,18 @@ export function TeacherAttendancePage() {
       setStudents(response.students);
       setSelectedDate(response.date);
       setSelectedClassId(response.selectedClassId);
-      setSaveMessage(successMessage);
+      setFeedback({
+        title: action === "reset" ? "Attendance Reset" : "Attendance Saved",
+        message: successMessage,
+        tone: "success",
+      });
     } catch (error) {
-      setPageError(
-        error instanceof Error ? error.message : "Failed to save attendance.",
-      );
+      setFeedback({
+        title: "Save Failed",
+        message:
+          error instanceof Error ? error.message : "Failed to save attendance.",
+        tone: "error",
+      });
     } finally {
       setIsSaving(false);
       setSaveAction("save");
@@ -361,7 +370,6 @@ export function TeacherAttendancePage() {
                   type="date"
                   value={selectedDate}
                   onChange={(event) => {
-                    setSaveMessage("");
                     setSelectedDate(event.target.value);
                   }}
                 />
@@ -372,9 +380,6 @@ export function TeacherAttendancePage() {
         </header>
 
         {pageError ? <p className="login-card__error">{pageError}</p> : null}
-        {!pageError && saveMessage ? (
-          <p className="page-subtitle">{saveMessage}</p>
-        ) : null}
 
         <div className="teacher-attendance-summary">
           <article className="teacher-attendance-summary-card">
@@ -537,6 +542,13 @@ export function TeacherAttendancePage() {
           setIsResetConfirmOpen(false);
           void handleReset();
         }}
+      />
+      <StatusModal
+        isOpen={feedback !== null}
+        title={feedback?.title ?? ""}
+        message={feedback?.message ?? ""}
+        tone={feedback?.tone ?? "success"}
+        onClose={() => setFeedback(null)}
       />
     </section>
   );

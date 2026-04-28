@@ -6,6 +6,10 @@ export type TeacherDashboardOverview = {
   teacherName: string;
   dateLabel: string;
   attendanceDateLabel: string | null;
+  aiInsight: {
+    title: string;
+    body: string;
+  } | null;
   todayClass: {
     scheduleId: number;
     classId: number;
