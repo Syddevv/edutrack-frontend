@@ -1,5 +1,3 @@
-import { API_BASE_URL } from "./api";
-
 export type StudentStatus = "Present" | "Absent" | "Late" | "No Record";
 
 export type StudentLookupOption = {
@@ -56,7 +54,7 @@ type ApiEnvelope<T> = T & {
   message?: string;
 };
 
-const STUDENTS_API_BASE = `${API_BASE_URL}/students`;
+const STUDENTS_API_BASE = "http://localhost/edutrack-backend/api/students";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${STUDENTS_API_BASE}${path}`, {

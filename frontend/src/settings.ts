@@ -1,5 +1,3 @@
-import { API_BASE_URL } from "./api";
-
 export type AppSettings = {
   schoolName: string;
   academicYearStart: number;
@@ -13,7 +11,7 @@ type ApiEnvelope<T> = T & {
   message?: string;
 };
 
-const SETTINGS_API_BASE = `${API_BASE_URL}/settings`;
+const SETTINGS_API_BASE = "http://localhost/edutrack-backend/api/settings";
 
 export const defaultAppSettings: AppSettings = {
   schoolName: "Bulacan Polytechnic College",

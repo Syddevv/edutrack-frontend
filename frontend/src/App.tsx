@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "./components/AppShell";
 import { getCurrentUser, login, logout, type AuthUser } from "./auth";
-import { defaultAppSettings, getAppSettings, type AppSettings } from "./settings";
+import {
+  defaultAppSettings,
+  getAppSettings,
+  type AppSettings,
+} from "./settings";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { ReportsPage } from "./pages/ReportsPage";
@@ -40,10 +44,8 @@ const getRouteFromHash = (): RouteKey => {
   return validRoutes.includes(hash) ? hash : "login";
 };
 
-function normalizeRole(role: string | null | undefined): "admin" | "teacher" {
-  return typeof role === "string" && role.toLowerCase() === "teacher"
-    ? "teacher"
-    : "admin";
+function normalizeRole(role: string): "admin" | "teacher" {
+  return role.toLowerCase() === "teacher" ? "teacher" : "admin";
 }
 
 function defaultRouteForRole(role: string, settings: AppSettings): RouteKey {
@@ -62,10 +64,14 @@ function isRouteAllowed(route: RouteKey, user: AuthUser | null): boolean {
   }
 
   if (normalizeRole(user.role) === "teacher") {
-    return ["teacher-dashboard", "attendance", "teacher-reports"].includes(route);
+    return ["teacher-dashboard", "attendance", "teacher-reports"].includes(
+      route,
+    );
   }
 
-  return ["dashboard", "students", "teachers", "reports", "settings"].includes(route);
+  return ["dashboard", "students", "teachers", "reports", "settings"].includes(
+    route,
+  );
 }
 
 function App() {
@@ -116,7 +122,9 @@ function App() {
     }
 
     if (!isRouteAllowed(route, authUser)) {
-      navigate(authUser ? defaultRouteForRole(authUser.role, settings) : "login");
+      navigate(
+        authUser ? defaultRouteForRole(authUser.role, settings) : "login",
+      );
     }
   }, [authUser, isAuthReady, isSettingsReady, route, settings]);
 
@@ -270,4 +278,3 @@ function App() {
 }
 
 export default App;
-

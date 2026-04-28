@@ -1,5 +1,3 @@
-import { API_BASE_URL } from "./api";
-
 export type DashboardSummary = {
   totalStudents: number;
   presentToday: number;
@@ -27,7 +25,7 @@ type ApiEnvelope<T> = T & {
   message?: string;
 };
 
-const REPORTS_API_BASE = `${API_BASE_URL}/reports`;
+const REPORTS_API_BASE = "http://localhost/edutrack-backend/api/reports";
 
 export async function getDashboardOverview(): Promise<DashboardOverview> {
   const response = await fetch(`${REPORTS_API_BASE}/overview.php`, {

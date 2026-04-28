@@ -1,5 +1,3 @@
-import { API_BASE_URL } from "./api";
-
 type ApiEnvelope<T> = T & {
   message?: string;
 };
@@ -61,8 +59,8 @@ export type TeacherAttendanceHistoryResponse = {
   history: TeacherAttendanceHistoryEntry[];
 };
 
-const REPORTS_API_BASE = `${API_BASE_URL}/reports`;
-const TEACHERS_API_BASE = `${API_BASE_URL}/teachers`;
+const REPORTS_API_BASE = "http://localhost/edutrack-backend/api/reports";
+const TEACHERS_API_BASE = "http://localhost/edutrack-backend/api/teachers";
 
 async function request<T>(url: string): Promise<T> {
   const response = await fetch(url, {
