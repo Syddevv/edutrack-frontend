@@ -186,7 +186,9 @@ export function DashboardPage() {
         {
           icon: <CheckCircleIcon className="stat-card__icon" />,
           title: "Present Today",
-          value: overview.summary.presentToday.toLocaleString(),
+          value: (
+            overview.summary.presentToday + overview.summary.lateToday
+          ).toLocaleString(),
         },
         {
           icon: <XCircleIcon className="stat-card__icon" />,
