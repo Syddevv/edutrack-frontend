@@ -164,10 +164,11 @@ export function TeacherAttendancePage() {
   }, [assignments, selectedAssignment]);
 
   const summary = useMemo(() => {
-    const present = students.filter(
+    const late = students.filter((student) => student.status === "Late").length;
+    const onTimePresent = students.filter(
       (student) => student.status === "Present",
     ).length;
-    const late = students.filter((student) => student.status === "Late").length;
+    const present = onTimePresent + late;
     const absent = students.filter(
       (student) => student.status === "Absent",
     ).length;

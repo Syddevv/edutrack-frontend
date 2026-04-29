@@ -75,6 +75,7 @@ export type UpdateTeacherInput = {
   teacherId: number;
   fullName: string;
   email: string;
+  password?: string;
   status: TeacherStatus;
   assignedClasses: TeacherAssignedClassPayload[];
 };

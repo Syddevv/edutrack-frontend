@@ -13,6 +13,7 @@ import {
   ActivityIcon,
   CheckCircleIcon,
   CloseIcon,
+  LockIcon,
   MailIcon,
   UserAddIcon,
 } from "./Icons";
@@ -50,6 +51,7 @@ export function EditTeacherModal({
 }: EditTeacherModalProps) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [status, setStatus] = useState<TeacherStatus>("Active");
   const [assignedClasses, setAssignedClasses] = useState<TeacherAssignedClass[]>([]);
   const [draft, setDraft] = useState<TeacherAssignedClass>(createDefaultDraft(lookups));
@@ -62,6 +64,7 @@ export function EditTeacherModal({
 
     setFullName(teacher.fullName);
     setEmail(teacher.email);
+    setPassword("");
     setStatus(teacher.status);
     setAssignedClasses(
       teacher.assignedClasses.map((item) => ({
@@ -128,6 +131,11 @@ export function EditTeacherModal({
       return;
     }
 
+    if (password.trim() !== "" && password.trim().length < 8) {
+      setError("New password must be at least 8 characters long.");
+      return;
+    }
+
     setError("");
 
     try {
@@ -135,6 +143,7 @@ export function EditTeacherModal({
         teacherId: currentTeacher.id,
         fullName: trimmedName,
         email: trimmedEmail,
+        password: password.trim() || undefined,
         status,
         assignedClasses,
       });
@@ -204,20 +213,36 @@ export function EditTeacherModal({
             </span>
           </label>
 
-          <label className="student-modal__field student-modal__field--full">
-            <span className="student-modal__label">
-              Email Address <span className="teacher-modal__required">*</span>
-            </span>
-            <span className="teacher-modal__input-wrap">
-              <MailIcon className="teacher-modal__input-icon" />
-              <input
-                className="teacher-modal__input"
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-              />
-            </span>
-          </label>
+          <div className="teacher-modal__grid">
+            <label className="student-modal__field">
+              <span className="student-modal__label">
+                Email Address <span className="teacher-modal__required">*</span>
+              </span>
+              <span className="teacher-modal__input-wrap">
+                <MailIcon className="teacher-modal__input-icon" />
+                <input
+                  className="teacher-modal__input"
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                />
+              </span>
+            </label>
+
+            <label className="student-modal__field">
+              <span className="student-modal__label">New Password</span>
+              <span className="teacher-modal__input-wrap">
+                <LockIcon className="teacher-modal__input-icon" />
+                <input
+                  className="teacher-modal__input"
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="Leave blank to keep current password"
+                />
+              </span>
+            </label>
+          </div>
 
           <TeacherAssignedClassesEditor
             assignedClasses={assignedClasses}
