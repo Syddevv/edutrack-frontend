@@ -267,7 +267,7 @@ export function ChatbotPanel({
               <div>
                 <div className="chatbot-panel__title-row">
                   <h2 className="chatbot-panel__title">AI Assistant</h2>
-                  <span className="chatbot-panel__model">Gemini 2.5</span>
+                  <span className="chatbot-panel__model">GROQ</span>
                 </div>
                 <p className="chatbot-panel__subtitle">
                   {role === "teacher"
