@@ -11,6 +11,8 @@ import {
   type TeacherDashboardOverview,
 } from "../teacherDashboard";
 
+const TEACHER_DASHBOARD_ROWS_PER_PAGE = 4;
+
 type DashboardStatCard = {
   icon: ReactNode;
   title: string;
@@ -86,6 +88,7 @@ export function TeacherDashboardPage({
   const [isLoading, setIsLoading] = useState(true);
   const [pageError, setPageError] = useState("");
   const [dismissedAlert, setDismissedAlert] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     void loadOverview();
@@ -96,6 +99,10 @@ export function TeacherDashboardPage({
       setDismissedAlert(false);
     }
   }, [overview?.aiInsight?.title, overview?.aiInsight?.body]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [overview?.recentActivity.length]);
 
   async function loadOverview() {
     setIsLoading(true);
@@ -169,8 +176,24 @@ export function TeacherDashboardPage({
     ];
   }, [overview]);
 
+  const totalActivityPages = Math.max(
+    1,
+    Math.ceil((overview?.recentActivity.length ?? 0) / TEACHER_DASHBOARD_ROWS_PER_PAGE),
+  );
+  const paginatedRecentActivity = useMemo(() => {
+    if (!overview) {
+      return [];
+    }
+
+    const startIndex = (currentPage - 1) * TEACHER_DASHBOARD_ROWS_PER_PAGE;
+    return overview.recentActivity.slice(
+      startIndex,
+      startIndex + TEACHER_DASHBOARD_ROWS_PER_PAGE,
+    );
+  }, [currentPage, overview]);
+
   return (
-    <section className="page">
+    <section className="page teacher-dashboard-page">
       <header className="teacher-dashboard-hero">
         <div className="teacher-dashboard-hero__main">
           <div className="dashboard-identity teacher-dashboard-identity">
@@ -272,44 +295,86 @@ export function TeacherDashboardPage({
           </div>
 
           <section className="panel">
-            <table className="data-table teacher-dashboard-table">
-              <thead>
-                <tr>
-                  <th>Student Name</th>
-                  <th>Status</th>
-                  <th>Class</th>
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (
+            <div className="dashboard-page__table-scroll">
+              <table className="data-table teacher-dashboard-table">
+                <thead>
                   <tr>
-                    <td colSpan={3} className="page-subtitle">
-                      Loading activity...
-                    </td>
+                    <th>Student Name</th>
+                    <th>Status</th>
+                    <th>Class</th>
                   </tr>
-                ) : overview && overview.recentActivity.length > 0 ? (
-                  overview.recentActivity.map((row) => (
-                    <tr key={`${row.studentId}-${row.className}`}>
-                      <td>
-                        <span className="teacher-dashboard-student-name">
-                          {row.fullName}
-                        </span>
+                </thead>
+                <tbody>
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={3} className="page-subtitle">
+                        Loading activity...
                       </td>
-                      <td>
-                        <StatusBadge status={row.status} />
-                      </td>
-                      <td>{row.className}</td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={3} className="page-subtitle">
-                      No recent attendance found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  ) : overview && paginatedRecentActivity.length > 0 ? (
+                    paginatedRecentActivity.map((row) => (
+                      <tr key={`${row.studentId}-${row.className}`}>
+                        <td>
+                          <span className="teacher-dashboard-student-name">
+                            {row.fullName}
+                          </span>
+                        </td>
+                        <td>
+                          <StatusBadge status={row.status} />
+                        </td>
+                        <td>{row.className}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={3} className="page-subtitle">
+                        No recent attendance found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {!isLoading && overview && overview.recentActivity.length > 0 ? (
+              <div className="table-footer dashboard-page__footer">
+                <span>
+                  Showing {(currentPage - 1) * TEACHER_DASHBOARD_ROWS_PER_PAGE + 1}-
+                  {Math.min(
+                    currentPage * TEACHER_DASHBOARD_ROWS_PER_PAGE,
+                    overview.recentActivity.length,
+                  )}{" "}
+                  of {overview.recentActivity.length} results
+                </span>
+                <div className="pagination">
+                  <button
+                    className="button button--secondary button--small"
+                    type="button"
+                    onClick={() =>
+                      setCurrentPage((page) => Math.max(1, page - 1))
+                    }
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </button>
+                  <span className="count-pill">
+                    Page {currentPage} of {totalActivityPages}
+                  </span>
+                  <button
+                    className="button button--secondary button--small"
+                    type="button"
+                    onClick={() =>
+                      setCurrentPage((page) =>
+                        Math.min(totalActivityPages, page + 1),
+                      )
+                    }
+                    disabled={currentPage === totalActivityPages}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </section>
         </section>
 

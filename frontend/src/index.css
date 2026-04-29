@@ -932,11 +932,35 @@ textarea {
   color: #22b463;
 }
 
+.teacher-dashboard-page {
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 .teacher-dashboard-content {
   display: grid;
   grid-template-columns: minmax(0, 1.75fr) 272px;
   gap: 24px;
   align-items: start;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.teacher-dashboard-activity,
+.teacher-dashboard-sidebar {
+  min-height: 0;
+}
+
+.teacher-dashboard-activity {
+  display: flex;
+  flex-direction: column;
+}
+
+.teacher-dashboard-activity .panel {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .teacher-dashboard-section-head {
@@ -3092,6 +3116,10 @@ textarea {
   gap: 18px;
 }
 
+.teacher-modal__grid > .student-modal__field {
+  min-width: 0;
+}
+
 .teacher-modal__required {
   color: #ef4444;
 }
@@ -3105,6 +3133,7 @@ textarea {
   align-items: center;
   gap: 10px;
   padding: 0 14px;
+  min-width: 0;
 }
 
 .teacher-modal__input-wrap--full {
@@ -3125,6 +3154,7 @@ textarea {
 .teacher-modal__input,
 .teacher-modal__select {
   width: 100%;
+  min-width: 0;
   border: 0;
   outline: 0;
   background: transparent;
@@ -3954,6 +3984,11 @@ textarea {
     overflow: visible;
   }
 
+  .teacher-dashboard-page {
+    height: auto;
+    overflow: visible;
+  }
+
   .dashboard-page__panel,
   .dashboard-page__table-scroll {
     overflow: visible;
@@ -3989,6 +4024,7 @@ textarea {
   .teacher-dashboard-hero__meta {
     padding-left: 0;
   }
+
 
   .page-actions,
   .toolbar__actions,
