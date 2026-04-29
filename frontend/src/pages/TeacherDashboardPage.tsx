@@ -145,7 +145,9 @@ export function TeacherDashboardPage({
             ? { tone: "success", label: "Active" }
             : overview.todayClass?.status === "upcoming"
               ? { tone: "danger", label: "Upcoming" }
-              : undefined,
+              : overview.todayClass?.status === "completed"
+                ? { tone: "danger", label: "Recent" }
+                : undefined,
       },
       {
         icon: <UsersIcon className="stat-card__icon" />,
