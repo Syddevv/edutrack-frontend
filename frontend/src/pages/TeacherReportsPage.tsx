@@ -11,12 +11,11 @@ import {
   type TeacherReportClassSelection,
   type TeacherReportsOverview,
 } from "../teacherReports";
-import schoolLogoUrl from "../assets/bpc-logo-removebg-preview.png";
+import { getSchoolLogoUrl } from "../branding";
 import {
   buildCsv,
   downloadCsv,
   formatFilenameDate,
-  SCHOOL_NAME,
   type CsvCell,
 } from "../csvExport";
 
@@ -63,17 +62,15 @@ function formatSignedPercent(value: number) {
   return `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`;
 }
 
-function getSchoolLogoReference() {
-  return new URL(schoolLogoUrl, window.location.origin).href;
-}
-
 function buildTeacherReportsCsv(
   overview: TeacherReportsOverview,
   selectedClass: TeacherReportClassSelection | null,
+  schoolName: string,
+  schoolLogoPath?: string | null,
 ) {
   const rows: CsvCell[][] = [
-    ["School Name", SCHOOL_NAME],
-    ["School Logo", getSchoolLogoReference()],
+    ["School Name", schoolName],
+    ["School Logo", getSchoolLogoUrl(schoolLogoPath)],
     ["Report", "Class Report"],
     ["Exported At", new Date().toLocaleString()],
     [],
@@ -105,7 +102,15 @@ function buildTeacherReportsCsv(
   return buildCsv(rows);
 }
 
-export function TeacherReportsPage() {
+type TeacherReportsPageProps = {
+  schoolName: string;
+  schoolLogoPath?: string | null;
+};
+
+export function TeacherReportsPage({
+  schoolName,
+  schoolLogoPath,
+}: TeacherReportsPageProps) {
   const [feedback, setFeedback] = useState<{
     message: string;
     title: string;
@@ -169,7 +174,12 @@ export function TeacherReportsPage() {
         exportOverview.assignments.find(
           (assignment) => assignment.classId === exportOverview.selectedClassId,
         ) ?? null;
-      const csv = buildTeacherReportsCsv(exportOverview, exportClass);
+      const csv = buildTeacherReportsCsv(
+        exportOverview,
+        exportClass,
+        schoolName,
+        schoolLogoPath,
+      );
       downloadCsv(csv, `class-report-${formatFilenameDate(new Date())}.csv`);
       setIsExportConfirmOpen(false);
       setFeedback({

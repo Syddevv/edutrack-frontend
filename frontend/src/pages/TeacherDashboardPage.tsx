@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
-import schoolLogoUrl from "../assets/bpc-logo-removebg-preview.png";
+import { getSchoolLogoUrl } from "../branding";
 import {
   CheckCircleIcon,
   ClockIcon,
@@ -74,12 +74,14 @@ function SparkIcon() {
 type TeacherDashboardPageProps = {
   academicYearStart: number;
   schoolName: string;
+  schoolLogoPath?: string | null;
   teacherName?: string;
 };
 
 export function TeacherDashboardPage({
   academicYearStart,
   schoolName,
+  schoolLogoPath,
   teacherName,
 }: TeacherDashboardPageProps) {
   const [overview, setOverview] = useState<TeacherDashboardOverview | null>(
@@ -201,7 +203,7 @@ export function TeacherDashboardPage({
           <div className="dashboard-identity teacher-dashboard-identity">
             <img
               className="dashboard-identity__logo"
-              src={schoolLogoUrl}
+              src={getSchoolLogoUrl(schoolLogoPath)}
               alt={`${schoolName} logo`}
             />
             <div>

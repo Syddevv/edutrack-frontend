@@ -10,8 +10,8 @@ import {
   UsersIcon,
   XCircleIcon,
 } from "../components/Icons";
+import { getSchoolLogoUrl } from "../branding";
 import { getDashboardOverview, type DashboardOverview } from "../dashboard";
-import schoolLogoUrl from "../assets/bpc-logo-removebg-preview.png";
 import { getStudents, type StudentRecord } from "../students";
 
 const DASHBOARD_ROWS_PER_PAGE = 7;
@@ -35,19 +35,19 @@ function escapeCsvCell(value: string | number | null | undefined) {
   return stringValue;
 }
 
-function getSchoolLogoReference() {
-  return new URL(schoolLogoUrl, window.location.origin).href;
-}
-
 function formatFilenameDate(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
-function buildStudentsCsv(students: StudentRecord[], schoolName: string) {
+function buildStudentsCsv(
+  students: StudentRecord[],
+  schoolName: string,
+  schoolLogoPath?: string | null,
+) {
   const generatedAt = new Date();
   const rows: Array<Array<string | number>> = [
     ["School Name", schoolName],
-    ["School Logo", getSchoolLogoReference()],
+    ["School Logo", getSchoolLogoUrl(schoolLogoPath)],
     ["Generated At", generatedAt.toLocaleString()],
     [],
     ["Student Name", "Course", "Year", "Section"],
@@ -80,11 +80,13 @@ function downloadCsv(content: string, filename: string) {
 type DashboardPageProps = {
   academicYearStart: number;
   schoolName: string;
+  schoolLogoPath?: string | null;
 };
 
 export function DashboardPage({
   academicYearStart,
   schoolName,
+  schoolLogoPath,
 }: DashboardPageProps) {
   const [feedback, setFeedback] = useState<{
     message: string;
@@ -125,7 +127,7 @@ export function DashboardPage({
 
     try {
       const response = await getStudents();
-      const csv = buildStudentsCsv(response.students, schoolName);
+      const csv = buildStudentsCsv(response.students, schoolName, schoolLogoPath);
       downloadCsv(csv, `students-${formatFilenameDate(new Date())}.csv`);
       setIsExportConfirmOpen(false);
       setFeedback({
@@ -216,7 +218,7 @@ export function DashboardPage({
         <div className="dashboard-identity">
           <img
             className="dashboard-identity__logo"
-            src={schoolLogoUrl}
+            src={getSchoolLogoUrl(schoolLogoPath)}
             alt={`${schoolName} logo`}
           />
           <div>

@@ -2282,6 +2282,44 @@ textarea {
   grid-template-columns: minmax(0, 1fr);
 }
 
+.settings-logo-panel {
+  display: grid;
+  grid-template-columns: 108px minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+  padding: 18px 22px 0;
+}
+
+.settings-logo-preview-wrap {
+  width: 108px;
+  height: 108px;
+  border: 1px solid var(--line-strong);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top, rgba(23, 23, 23, 0.04), transparent 60%),
+    #f8f8f8;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.settings-logo-preview {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+}
+
+.settings-logo-controls {
+  display: grid;
+  gap: 12px;
+}
+
+.settings-logo-input {
+  display: block;
+  width: 100%;
+  color: #374151;
+}
+
 .field__hint {
   color: #8c919b;
   font-size: 13px;
@@ -3425,7 +3463,7 @@ textarea {
 
 .login-card__actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 12px;
 }
 
@@ -4029,7 +4067,6 @@ textarea {
   .page-actions,
   .toolbar__actions,
   .pagination,
-  .login-card__actions,
   .auth-modal__actions,
   .two-factor-modal__actions,
   .teacher-attendance-footer__actions,
@@ -4059,6 +4096,10 @@ textarea {
   }
 
   .settings-form--two {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-logo-panel {
     grid-template-columns: 1fr;
   }
 

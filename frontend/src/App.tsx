@@ -137,25 +137,14 @@ function App() {
   const handleLogin = async ({
     email,
     password,
-    expectedRole,
     rememberMe,
   }: {
     email: string;
     password: string;
-    expectedRole: "admin" | "teacher";
     rememberMe: boolean;
   }) => {
     try {
       const response = await login(email, password, rememberMe);
-      const resolvedRole =
-        "role" in response ? normalizeRole(response.role) : "admin";
-
-      if (resolvedRole !== expectedRole) {
-        return {
-          error: `This account is not allowed to log in as ${expectedRole}.`,
-          challenge: null,
-        };
-      }
 
       if ("requiresTwoFactor" in response && response.requiresTwoFactor) {
         return {
@@ -165,14 +154,6 @@ function App() {
       }
 
       const user = response as AuthUser;
-      const actualRole = normalizeRole(user.role);
-
-      if (actualRole !== expectedRole) {
-        return {
-          error: `This account is not allowed to log in as ${expectedRole}.`,
-          challenge: null,
-        };
-      }
 
       setAuthUser(user);
       try {
@@ -270,7 +251,10 @@ function App() {
           onNavigate={navigate}
           onLogout={handleLogout}
         >
-          <ReportsPage />
+          <ReportsPage
+            schoolLogoPath={settings.schoolLogoPath}
+            schoolName={settings.schoolName}
+          />
         </AppShell>
       );
     case "settings":
@@ -295,6 +279,7 @@ function App() {
         >
           <TeacherDashboardPage
             academicYearStart={settings.academicYearStart}
+            schoolLogoPath={settings.schoolLogoPath}
             schoolName={settings.schoolName}
             teacherName={authUser?.name}
           />
@@ -321,7 +306,10 @@ function App() {
           onLogout={handleLogout}
           variant="teacher"
         >
-          <TeacherReportsPage />
+          <TeacherReportsPage
+            schoolLogoPath={settings.schoolLogoPath}
+            schoolName={settings.schoolName}
+          />
         </AppShell>
       );
     case "dashboard":
@@ -335,6 +323,7 @@ function App() {
         >
           <DashboardPage
             academicYearStart={settings.academicYearStart}
+            schoolLogoPath={settings.schoolLogoPath}
             schoolName={settings.schoolName}
           />
         </AppShell>

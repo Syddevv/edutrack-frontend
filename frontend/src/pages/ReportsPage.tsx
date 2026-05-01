@@ -3,12 +3,11 @@ import { ConfirmationDialog } from "../components/ConfirmationDialog";
 import { StatusModal } from "../components/StatusModal";
 import { getReportsOverview, type ReportsOverview } from "../reports";
 import { DownloadIcon, RefreshIcon } from "../components/Icons";
-import schoolLogoUrl from "../assets/bpc-logo-removebg-preview.png";
+import { getSchoolLogoUrl } from "../branding";
 import {
   buildCsv,
   downloadCsv,
   formatFilenameDate,
-  SCHOOL_NAME,
   type CsvCell,
 } from "../csvExport";
 
@@ -20,14 +19,14 @@ function formatSignedPercent(value: number) {
   return `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`;
 }
 
-function getSchoolLogoReference() {
-  return new URL(schoolLogoUrl, window.location.origin).href;
-}
-
-function buildReportsCsv(overview: ReportsOverview) {
+function buildReportsCsv(
+  overview: ReportsOverview,
+  schoolName: string,
+  schoolLogoPath?: string | null,
+) {
   const rows: CsvCell[][] = [
-    ["School Name", SCHOOL_NAME],
-    ["School Logo", getSchoolLogoReference()],
+    ["School Name", schoolName],
+    ["School Logo", getSchoolLogoUrl(schoolLogoPath)],
     ["Report", "Reports Overview"],
     ["Generated At", overview.generatedAt],
     ["Exported At", new Date().toLocaleString()],
@@ -75,7 +74,15 @@ function buildReportsCsv(overview: ReportsOverview) {
   return buildCsv(rows);
 }
 
-export function ReportsPage() {
+type ReportsPageProps = {
+  schoolName: string;
+  schoolLogoPath?: string | null;
+};
+
+export function ReportsPage({
+  schoolName,
+  schoolLogoPath,
+}: ReportsPageProps) {
   const [feedback, setFeedback] = useState<{
     message: string;
     title: string;
@@ -117,7 +124,7 @@ export function ReportsPage() {
 
     try {
       const exportOverview = overview ?? (await getReportsOverview());
-      const csv = buildReportsCsv(exportOverview);
+      const csv = buildReportsCsv(exportOverview, schoolName, schoolLogoPath);
       downloadCsv(csv, `reports-overview-${formatFilenameDate(new Date())}.csv`);
       setIsExportConfirmOpen(false);
       setFeedback({

@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { getSchoolLogoUrl } from "../branding";
 import {
   LockIcon,
   SchoolIcon,
@@ -8,7 +9,11 @@ import {
   TwoFactorDisableModal,
   TwoFactorSetupModal,
 } from "../components/TwoFactorModals";
-import { type AppSettings, updateAppSettings } from "../settings";
+import {
+  type AppSettings,
+  updateAppSettings,
+  uploadSchoolLogo,
+} from "../settings";
 import { getTwoFactorStatus } from "../twoFactor";
 
 type SettingsPageProps = {
@@ -50,6 +55,10 @@ export function SettingsPage({ settings, onSettingsSaved }: SettingsPageProps) {
   const [isTwoFactorLoading, setIsTwoFactorLoading] = useState(true);
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
   const [isDisableModalOpen, setIsDisableModalOpen] = useState(false);
+  const [selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null);
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
+  const [isLogoUploading, setIsLogoUploading] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     setSchoolName(settings.schoolName);
@@ -57,6 +66,14 @@ export function SettingsPage({ settings, onSettingsSaved }: SettingsPageProps) {
     setAiInsightsEnabled(settings.aiInsightsEnabled);
     setDefaultLandingPage(settings.defaultLandingPage);
   }, [settings]);
+
+  useEffect(() => {
+    return () => {
+      if (logoPreviewUrl) {
+        URL.revokeObjectURL(logoPreviewUrl);
+      }
+    };
+  }, [logoPreviewUrl]);
 
   useEffect(() => {
     let isMounted = true;
@@ -139,6 +156,34 @@ export function SettingsPage({ settings, onSettingsSaved }: SettingsPageProps) {
     }
   }
 
+  async function handleLogoUpload() {
+    if (!selectedLogoFile || isLogoUploading) {
+      return;
+    }
+
+    setPageError("");
+    setProfileMessage("");
+    setIsLogoUploading(true);
+
+    try {
+      const updated = await uploadSchoolLogo(selectedLogoFile);
+      onSettingsSaved(updated);
+      setProfileMessage("School logo updated.");
+      setSelectedLogoFile(null);
+
+      if (logoPreviewUrl) {
+        URL.revokeObjectURL(logoPreviewUrl);
+        setLogoPreviewUrl(null);
+      }
+    } catch (error) {
+      setPageError(
+        error instanceof Error ? error.message : "Failed to upload school logo.",
+      );
+    } finally {
+      setIsLogoUploading(false);
+    }
+  }
+
   return (
     <section className="page">
       <header className="page__topbar page__topbar--stack">
@@ -208,6 +253,62 @@ export function SettingsPage({ settings, onSettingsSaved }: SettingsPageProps) {
                 Only valid school years up to the current year are allowed.
               </span>
             </label>
+          </div>
+
+          <div className="settings-logo-panel">
+            <div className="settings-logo-preview-wrap">
+              <img
+                className="settings-logo-preview"
+                src={logoPreviewUrl ?? getSchoolLogoUrl(settings.schoolLogoPath)}
+                alt={`${settings.schoolName} logo preview`}
+              />
+            </div>
+
+            <div className="settings-logo-controls">
+              <label className="field">
+                <span className="field__label">School Logo</span>
+                <input
+                  accept="image/png,image/jpeg,image/webp"
+                  className="settings-logo-input"
+                  ref={logoInputRef}
+                  type="file"
+                  onChange={(event) => {
+                    const nextFile = event.target.files?.[0] ?? null;
+                    setProfileMessage("");
+                    setPageError("");
+                    setSelectedLogoFile(nextFile);
+
+                    if (logoPreviewUrl) {
+                      URL.revokeObjectURL(logoPreviewUrl);
+                    }
+
+                    setLogoPreviewUrl(
+                      nextFile ? URL.createObjectURL(nextFile) : null,
+                    );
+                  }}
+                />
+                <span className="field__hint">
+                  Upload PNG, JPG, or WEBP up to 2 MB.
+                </span>
+              </label>
+
+              <button
+                className="button button--secondary"
+                type="button"
+                onClick={() => logoInputRef.current?.click()}
+              >
+                Choose Logo
+              </button>
+
+              <button
+                className="button button--primary"
+                type="button"
+                disabled={!selectedLogoFile || isLogoUploading}
+                onClick={() => void handleLogoUpload()}
+              >
+                {isLogoUploading ? "Uploading..." : "Save Logo"}
+              </button>
+            </div>
           </div>
 
           <div className="settings-actions">

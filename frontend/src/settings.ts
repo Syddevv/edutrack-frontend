@@ -4,6 +4,7 @@ export type AppSettings = {
   aiInsightsEnabled: boolean;
   defaultLandingPage: "dashboard" | "students" | "teachers" | "reports" | "settings";
   lateThresholdMinutes: number;
+  schoolLogoPath: string | null;
   validAcademicYearStarts: number[];
 };
 
@@ -19,6 +20,7 @@ export const defaultAppSettings: AppSettings = {
   aiInsightsEnabled: false,
   defaultLandingPage: "dashboard",
   lateThresholdMinutes: 15,
+  schoolLogoPath: null,
   validAcademicYearStarts: [2025, 2026],
 };
 
@@ -26,7 +28,9 @@ async function request<T>(init?: RequestInit): Promise<T> {
   const response = await fetch(`${SETTINGS_API_BASE}/index.php`, {
     credentials: "include",
     headers: {
-      "Content-Type": "application/json",
+      ...(init?.body instanceof FormData
+        ? {}
+        : { "Content-Type": "application/json" }),
       ...(init?.headers ?? {}),
     },
     ...init,
@@ -51,5 +55,15 @@ export async function updateAppSettings(
   return request<AppSettings>({
     method: "POST",
     body: JSON.stringify(input),
+  });
+}
+
+export async function uploadSchoolLogo(file: File): Promise<AppSettings> {
+  const formData = new FormData();
+  formData.append("logo", file);
+
+  return request<AppSettings>({
+    method: "POST",
+    body: formData,
   });
 }

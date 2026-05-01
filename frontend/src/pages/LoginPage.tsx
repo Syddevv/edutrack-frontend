@@ -8,7 +8,6 @@ type LoginPageProps = {
   onLogin: (credentials: {
     email: string;
     password: string;
-    expectedRole: "admin" | "teacher";
     rememberMe: boolean;
   }) => Promise<{ error: string | null; challenge: LoginChallenge | null }>;
   onVerifyLoginTwoFactor: (code: string) => Promise<string | null>;
@@ -27,7 +26,7 @@ export function LoginPage({
   const [rememberMe, setRememberMe] = useState(false);
   const [loginChallenge, setLoginChallenge] = useState<LoginChallenge | null>(null);
 
-  async function handleLogin(expectedRole: "admin" | "teacher") {
+  async function handleLogin() {
     setIsSubmitting(true);
     setError(null);
     setNotice(null);
@@ -35,7 +34,6 @@ export function LoginPage({
     const result = await onLogin({
       email,
       password,
-      expectedRole,
       rememberMe,
     });
 
@@ -129,17 +127,9 @@ export function LoginPage({
                 className="button button--primary button--stretch"
                 type="button"
                 disabled={isSubmitting}
-                onClick={() => void handleLogin("admin")}
+                onClick={() => void handleLogin()}
               >
-                {isSubmitting ? "Logging in..." : "Login as Admin"}
-              </button>
-              <button
-                className="button button--secondary button--stretch"
-                type="button"
-                disabled={isSubmitting}
-                onClick={() => void handleLogin("teacher")}
-              >
-                Login as Teacher
+                {isSubmitting ? "Logging in..." : "Login"}
               </button>
             </div>
           </div>
