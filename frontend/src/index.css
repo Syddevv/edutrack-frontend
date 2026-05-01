@@ -435,6 +435,99 @@ textarea {
   overflow: visible;
 }
 
+.lookup-page__stats {
+  margin-bottom: 22px;
+}
+
+.lookup-page__panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.lookup-page__toolbar {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.lookup-page__table-scroll {
+  overflow: auto;
+}
+
+.lookup-page__table-scroll .data-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.lookup-page__empty,
+.lookup-page__error {
+  padding: 0 22px 22px;
+}
+
+.lookup-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel-soft);
+}
+
+.lookup-tabs__item {
+  min-height: 42px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-base) var(--motion-smooth),
+    color var(--motion-base) var(--motion-smooth),
+    box-shadow var(--motion-base) var(--motion-smooth);
+}
+
+.lookup-tabs__item--active {
+  background: #171717;
+  color: #fff;
+  box-shadow: 0 12px 24px rgba(17, 24, 39, 0.12);
+}
+
+.lookup-tabs__count {
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 12px;
+}
+
+.lookup-tabs__item:not(.lookup-tabs__item--active) .lookup-tabs__count {
+  background: #fff;
+  color: #525866;
+}
+
+.lookup-modal {
+  width: min(520px, calc(100vw - 32px));
+}
+
+.lookup-modal__form {
+  gap: 16px;
+}
+
+.lookup-modal__actions {
+  padding-top: 4px;
+}
+
 .panel__title-row {
   padding: 18px 22px 8px;
 }
@@ -4032,6 +4125,19 @@ textarea {
     overflow: visible;
   }
 
+  .lookup-page__toolbar {
+    align-items: stretch;
+  }
+
+  .lookup-tabs {
+    width: 100%;
+  }
+
+  .lookup-tabs__item {
+    flex: 1 1 0;
+    justify-content: center;
+  }
+
   .app-shell__content {
     height: auto;
     overflow: visible;
@@ -4232,6 +4338,17 @@ textarea {
 
   .student-modal__actions {
     flex-wrap: wrap;
+  }
+
+  .lookup-page .page-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .lookup-page .page-actions .button {
+    width: 100%;
+    justify-content: center;
   }
 
   .teacher-modal__grid {

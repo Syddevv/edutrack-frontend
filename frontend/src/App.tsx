@@ -18,6 +18,7 @@ import { ReportsPage } from "./pages/ReportsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { StudentsPage } from "./pages/StudentsPage";
 import { TeachersPage } from "./pages/TeachersPage";
+import { SubjectCourseManagementPage } from "./pages/SubjectCourseManagementPage";
 import { TeacherDashboardPage } from "./pages/TeacherDashboardPage";
 import { TeacherAttendancePage } from "./pages/TeacherAttendancePage";
 import { TeacherReportsPage } from "./pages/TeacherReportsPage";
@@ -30,6 +31,7 @@ export type RouteKey =
   | "teacher-reports"
   | "students"
   | "teachers"
+  | "subjects-courses"
   | "reports"
   | "settings";
 
@@ -41,6 +43,7 @@ const validRoutes: RouteKey[] = [
   "teacher-reports",
   "students",
   "teachers",
+  "subjects-courses",
   "reports",
   "settings",
 ];
@@ -75,7 +78,7 @@ function isRouteAllowed(route: RouteKey, user: AuthUser | null): boolean {
     );
   }
 
-  return ["dashboard", "students", "teachers", "reports", "settings"].includes(
+  return ["dashboard", "students", "teachers", "subjects-courses", "reports", "settings"].includes(
     route,
   );
 }
@@ -241,6 +244,17 @@ function App() {
           onLogout={handleLogout}
         >
           <TeachersPage />
+        </AppShell>
+      );
+    case "subjects-courses":
+      return (
+        <AppShell
+          activeRoute={route}
+          settings={settings}
+          onNavigate={navigate}
+          onLogout={handleLogout}
+        >
+          <SubjectCourseManagementPage />
         </AppShell>
       );
     case "reports":

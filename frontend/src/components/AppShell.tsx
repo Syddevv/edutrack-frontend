@@ -9,6 +9,7 @@ import {
   GraduationCapIcon,
   GridIcon,
   LogoutIcon,
+  SchoolIcon,
   SettingsIcon,
   UsersIcon,
 } from "./Icons";
@@ -47,6 +48,12 @@ const navItems: NavItem[] = [
     label: "Teachers",
     route: "teachers",
     icon: <GraduationCapIcon className="nav__icon" />,
+  },
+  {
+    key: "subjects-courses",
+    label: "Subjects & Courses",
+    route: "subjects-courses",
+    icon: <SchoolIcon className="nav__icon" />,
   },
   {
     key: "reports",
