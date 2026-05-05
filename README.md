@@ -1,14 +1,17 @@
 🎓 EduTrack
 
-EduTrack is a modern web-based system designed to help students manage their academic progress, track goals, and stay organized throughout their studies.
+EduTrack is a web-based academic management system designed for teachers and administrators to efficiently record attendance, manage classes, and generate real-time reports. It enables educators to monitor student performance and quickly identify at-risk students through clear, organized dashboards.
 
 📌 Features
-📊 Progress Tracking – Monitor academic performance and completion of tasks
-🎯 Goal Setting – Set and manage short-term and long-term study goals
-🗂️ Task Management – Organize assignments, deadlines, and activities
-🤖 AI Chatbot Assistant – Get instant help with study questions, guidance, and system navigation
+📝 Attendance Management – Easily record, update, and track student attendance in real time
+🏫 Class Management – Create and manage classes, sections, and student lists efficiently
+📊 Real-Time Reports – Generate instant reports on attendance and student performance
+⚠️ At-Risk Student Identification – Quickly identify students with low attendance or poor performance
+📈 Performance Monitoring Dashboard – View student data through clear and organized dashboards
+🤖 AI Chatbot Assistant – Get instant assistance for system navigation, reports, and academic insights
 🔐 Authentication System – Secure login with optional 2FA support
 📱 Responsive Design – Works seamlessly on desktop and mobile devices
+
 🛠️ Tech Stack
 
 Frontend
@@ -45,6 +48,7 @@ Login & Registration system
 Optional Two-Factor Authentication (2FA) using authenticator apps
 
 📌 Future Improvements
+
 📈 Analytics dashboard
 🔔 Notifications & reminders
 ☁️ Cloud sync / deployment
