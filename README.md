@@ -43,10 +43,6 @@ EduTrack includes:
 
 Login & Registration system
 Optional Two-Factor Authentication (2FA) using authenticator apps
-🎯 Project Goals
-Improve student productivity and focus
-Provide a simple and intuitive academic tracking system
-Help users stay consistent with their study habits
 
 📌 Future Improvements
 📈 Analytics dashboard
